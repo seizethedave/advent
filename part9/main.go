@@ -12,6 +12,8 @@ type xy struct {
 	y, x int
 }
 
+var Cardinals = [...]xy{{-1, 0}, {0, 1}, {1, 0}, {0, -1}}
+
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 	var grid [][]int
@@ -48,7 +50,6 @@ func main() {
 	// Part 2:
 
 	var sizes []int
-
 	for _, pt := range pts {
 		seen := make(map[xy]struct{})
 		sizes = append(sizes, basinSize(grid, pt, seen))
@@ -65,7 +66,7 @@ func lowPoints(grid [][]int) []xy {
 		for i, c := range line {
 			best := true
 
-			for _, dydx := range []xy{{-1, 0}, {0, 1}, {1, 0}, {0, -1}} {
+			for _, dydx := range Cardinals {
 				y := j + dydx.y
 				x := i + dydx.x
 				if y >= 0 && y < len(grid) && x >= 0 && x < len(line) {
@@ -88,7 +89,7 @@ func lowPoints(grid [][]int) []xy {
 func basinSize(grid [][]int, lowPoint xy, seen map[xy]struct{}) int {
 	val := grid[lowPoint.y][lowPoint.x]
 
-	for _, dydx := range []xy{{-1, 0}, {0, 1}, {1, 0}, {0, -1}} {
+	for _, dydx := range Cardinals {
 		y := lowPoint.y + dydx.y
 		x := lowPoint.x + dydx.x
 		if y >= 0 && y < len(grid) && x >= 0 && x < len(grid[0]) {
