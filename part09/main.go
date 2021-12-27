@@ -51,8 +51,7 @@ func main() {
 
 	var sizes []int
 	for _, pt := range pts {
-		seen := make(map[xy]struct{})
-		sizes = append(sizes, basinSize(grid, pt, seen))
+		sizes = append(sizes, basinSize(grid, pt))
 	}
 	sort.Ints(sizes)
 	l := len(sizes)
@@ -86,22 +85,27 @@ func lowPoints(grid [][]int) []xy {
 	return lowPts
 }
 
-func basinSize(grid [][]int, lowPoint xy, seen map[xy]struct{}) int {
-	val := grid[lowPoint.y][lowPoint.x]
+func basinSize(grid [][]int, lowPoint xy) int {
+	seen := make(map[xy]struct{})
+	var scan func(xy)
 
-	for _, dydx := range Cardinals {
-		y := lowPoint.y + dydx.y
-		x := lowPoint.x + dydx.x
-		if y >= 0 && y < len(grid) && x >= 0 && x < len(grid[0]) {
-			pt := xy{y, x}
-			if _, ok := seen[pt]; !ok {
-				if grid[y][x] < 9 && grid[y][x] > val {
-					seen[pt] = struct{}{}
-					basinSize(grid, pt, seen)
+	scan = func(pt xy) {
+		val := grid[pt.y][pt.x]
+		for _, dir := range Cardinals {
+			y := pt.y + dir.y
+			x := pt.x + dir.x
+			if y >= 0 && y < len(grid) && x >= 0 && x < len(grid[0]) {
+				neighbor := xy{y, x}
+				if _, ok := seen[neighbor]; !ok {
+					if grid[y][x] < 9 && grid[y][x] > val {
+						seen[neighbor] = struct{}{}
+						scan(neighbor)
+					}
 				}
 			}
 		}
 	}
 
+	scan(lowPoint)
 	return len(seen) + 1
 }
