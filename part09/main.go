@@ -92,12 +92,10 @@ func basinSize(grid [][]int, lowPoint xy) int {
 	scan = func(pt xy) {
 		val := grid[pt.y][pt.x]
 		for _, dir := range Cardinals {
-			y := pt.y + dir.y
-			x := pt.x + dir.x
-			if y >= 0 && y < len(grid) && x >= 0 && x < len(grid[0]) {
-				neighbor := xy{y, x}
+			neighbor := xy{pt.y + dir.y, pt.x + dir.x}
+			if neighbor.y >= 0 && neighbor.y < len(grid) && neighbor.x >= 0 && neighbor.x < len(grid[0]) {
 				if _, ok := seen[neighbor]; !ok {
-					if grid[y][x] < 9 && grid[y][x] > val {
+					if grid[neighbor.y][neighbor.x] < 9 && grid[neighbor.y][neighbor.x] > val {
 						seen[neighbor] = struct{}{}
 						scan(neighbor)
 					}
