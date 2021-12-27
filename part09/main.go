@@ -86,7 +86,7 @@ func lowPoints(grid [][]int) []xy {
 }
 
 func basinSize(grid [][]int, lowPoint xy) int {
-	seen := make(map[xy]struct{})
+	seen := map[xy]struct{}{lowPoint: {}}
 	var scan func(xy)
 
 	scan = func(pt xy) {
@@ -105,5 +105,5 @@ func basinSize(grid [][]int, lowPoint xy) int {
 	}
 
 	scan(lowPoint)
-	return len(seen) + 1
+	return len(seen)
 }
