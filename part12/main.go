@@ -25,8 +25,8 @@ func main() {
 		connect(nodes[1], nodes[0])
 	}
 
-	p := countPaths(edges, make(map[string]struct{}), "start")
-	fmt.Println(p)
+	fmt.Println(countPaths1(edges, make(map[string]struct{}), "start"))
+	fmt.Println(countPaths2(edges, make(map[string]struct{}), "", "start"))
 }
 
 func reentrant(node string) bool {
@@ -34,22 +34,59 @@ func reentrant(node string) bool {
 	return c >= 'A' && c <= 'Z'
 }
 
-func countPaths(edges edgeMap, visited map[string]struct{}, u string) int {
-	if !reentrant(u) {
-		if _, ok := visited[u]; ok {
-			return 0
-		}
-		visited[u] = struct{}{}
-		defer delete(visited, u) // unvisit
-	}
+func canDoubleVisit(node string) bool {
+	return node != "start" && node != "end"
+}
 
+func countPaths1(edges edgeMap, visited map[string]struct{}, u string) int {
 	if u == "end" {
 		return 1
 	}
 
+	if !reentrant(u) {
+		if _, ok := visited[u]; ok {
+			return 0
+		}
+		visited[u] = struct{}{}  // visit
+		defer delete(visited, u) // unvisit
+	}
+
 	subpaths := 0
 	for _, v := range edges[u] {
-		subpaths += countPaths(edges, visited, v)
+		subpaths += countPaths1(edges, visited, v)
+	}
+	return subpaths
+}
+
+func countPaths2(edges edgeMap, visited map[string]struct{}, doubleVisit string, u string) int {
+	if u == "end" {
+		return 1
+	}
+
+	if !reentrant(u) {
+		// doubleVisit allows a single node to be visited twice.
+		if _, ok := visited[u]; ok {
+			if canDoubleVisit(u) && doubleVisit == "" {
+				doubleVisit = u
+			} else {
+				return 0
+			}
+		}
+		visited[u] = struct{}{} // visit
+		defer func() {          // unvisit
+			// Unvisiting now acts on doubleVisit IF it's `u`,
+			// otherwise it unvisits it in the visited map.
+			if doubleVisit == u {
+				doubleVisit = ""
+			} else {
+				delete(visited, u)
+			}
+		}()
+	}
+
+	subpaths := 0
+	for _, v := range edges[u] {
+		subpaths += countPaths2(edges, visited, doubleVisit, v)
 	}
 	return subpaths
 }
