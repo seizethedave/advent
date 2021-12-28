@@ -25,9 +25,7 @@ func main() {
 		connect(nodes[1], nodes[0])
 	}
 
-	visited := make(map[string]struct{})
-	p := findPaths(edges, visited, "start")
-
+	p := countPaths(edges, make(map[string]struct{}), "start")
 	fmt.Println(p)
 }
 
@@ -36,7 +34,7 @@ func reentrant(node string) bool {
 	return c >= 'A' && c <= 'Z'
 }
 
-func findPaths(edges edgeMap, visited map[string]struct{}, u string) int {
+func countPaths(edges edgeMap, visited map[string]struct{}, u string) int {
 	if !reentrant(u) {
 		if _, ok := visited[u]; ok {
 			return 0
@@ -51,7 +49,7 @@ func findPaths(edges edgeMap, visited map[string]struct{}, u string) int {
 
 	subpaths := 0
 	for _, v := range edges[u] {
-		subpaths += findPaths(edges, visited, v)
+		subpaths += countPaths(edges, visited, v)
 	}
 	return subpaths
 }
