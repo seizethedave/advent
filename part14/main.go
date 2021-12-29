@@ -19,23 +19,23 @@ func main() {
 	}
 	sc.Scan()
 
-	rules := make(map[string]rune)
+	rules := make(map[[2]rune]rune)
 
 	for sc.Scan() {
-		var left string
-		var right rune
-		n, err := fmt.Sscanf(sc.Text(), "%s -> %c", &left, &right)
+		var left1, left2, right rune
+		n, err := fmt.Sscanf(sc.Text(), "%c%c -> %c", &left1, &left2, &right)
 		if err == io.EOF {
 			break
 		} else if err != nil {
 			panic(err.Error())
-		} else if n != 2 {
-			panic("non-two sscanf")
+		} else if n != 3 {
+			panic("non-3 sscanf")
 		}
-		rules[left] = right
+		rules[[2]rune{left1, left2}] = right
 	}
 
 	for i := 0; i < 10; i++ {
+		fmt.Println(i)
 		doStep(str, rules)
 	}
 
@@ -60,11 +60,11 @@ func main() {
 	fmt.Println(max - min)
 }
 
-func doStep(str *list.List, rules map[string]rune) {
+func doStep(str *list.List, rules map[[2]rune]rune) {
 	var prev rune
 	for e := str.Front(); e != nil; e = e.Next() {
 		if prev != 0 {
-			pair := string([]rune{prev, e.Value.(rune)})
+			pair := [2]rune{prev, e.Value.(rune)}
 			if insertion, ok := rules[pair]; ok {
 				str.InsertBefore(insertion, e)
 			}
