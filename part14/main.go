@@ -89,10 +89,9 @@ func countChars(pattern string, rules map[[2]rune]rune) map[rune]int {
 		var result cacheResult
 
 		if depth == 0 {
-			result = map[rune]int{
-				pair[0]: 1,
-				pair[1]: 1,
-			}
+			result = make(cacheResult)
+			result[pair[0]]++
+			result[pair[1]]++
 		} else if insertion, ok := rules[pair]; ok {
 			result = make(cacheResult)
 			// combine left & right in new result.
@@ -102,7 +101,7 @@ func countChars(pattern string, rules map[[2]rune]rune) map[rune]int {
 			for k, v := range visit([2]rune{insertion, pair[1]}, depth-1) {
 				result[k] += v
 			}
-			//result[insertion]--
+			result[insertion]-- // don't double-count
 		}
 
 		if result != nil {
@@ -113,8 +112,8 @@ func countChars(pattern string, rules map[[2]rune]rune) map[rune]int {
 
 	counts := make(map[rune]int)
 	for i := 0; i < (len(pattern) - 1); i++ {
-		res := visit([2]rune{rune(pattern[i]), rune(pattern[i+1])}, 10)
-		for k, v := range res {
+		pair := [2]rune{rune(pattern[i]), rune(pattern[i+1])}
+		for k, v := range visit(pair, 40) {
 			counts[k] += v
 		}
 	}
