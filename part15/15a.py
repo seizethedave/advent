@@ -30,6 +30,6 @@ def scan(grid):
 
 if __name__ == "__main__":
 	grid = []
-	for line in sys.stdin.readlines():
+	for line in sys.stdin:
 		grid.append([int(j) for j in line.rstrip()])
 	print(scan(grid))
