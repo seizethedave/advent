@@ -95,7 +95,6 @@ func readPacket(r *bitReader) (int, error) {
 			return 0, errors.Wrap(err, "reading literal")
 		}
 	} else {
-
 		// an operator.
 		lengthFlag, err := r.readBits(1)
 		if err != nil {
@@ -111,7 +110,7 @@ func readPacket(r *bitReader) (int, error) {
 			for i := 0; i < subpackets; i++ {
 				vers, err := readPacket(r)
 				if err != nil {
-					return 0, errors.Wrap(err, "read subpacket a")
+					return 0, errors.Wrap(err, "read subpacket")
 				}
 				versum += vers
 			}
@@ -121,12 +120,10 @@ func readPacket(r *bitReader) (int, error) {
 				return 0, err
 			}
 
-			begin := r.offset
-
-			for r.offset < begin+length {
+			for begin := r.offset; r.offset < begin+length; {
 				vers, err := readPacket(r)
 				if err != nil {
-					return 0, errors.Wrap(err, "read subpacket b")
+					return 0, errors.Wrap(err, "read subpacket")
 				}
 				versum += vers
 			}
