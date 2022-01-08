@@ -22,73 +22,57 @@ const (
 	TypeEqualTo
 )
 
-func opSum(vals []int) int {
-	s := 0
-	for _, v := range vals {
-		s += v
-	}
-	return s
-}
-
-func opProduct(vals []int) int {
-	s := 1
-	for _, v := range vals {
-		s *= v
-	}
-	return s
-}
-
-func opMin(vals []int) int {
-	s := math.MaxInt
-	for _, v := range vals {
-		if v < s {
-			s = v
+var ops = [...]func([]int) int{
+	TypeSum: func(v []int) int {
+		s := 0
+		for _, n := range v {
+			s += n
 		}
-	}
-	return s
-}
-
-func opMax(vals []int) int {
-	s := 0
-	for _, v := range vals {
-		if v > s {
-			s = v
+		return s
+	},
+	TypeProduct: func(v []int) int {
+		s := 1
+		for _, n := range v {
+			s *= n
 		}
-	}
-	return s
-}
-
-func opGt(vals []int) int {
-	if vals[0] > vals[1] {
-		return 1
-	}
-	return 0
-}
-
-func opLt(vals []int) int {
-	if vals[0] < vals[1] {
-		return 1
-	}
-	return 0
-}
-
-func opEq(vals []int) int {
-	if vals[0] == vals[1] {
-		return 1
-	}
-	return 0
-}
-
-type opFunc func([]int) int
-
-var ops = [...]opFunc{
-	TypeSum:         opSum,
-	TypeProduct:     opProduct,
-	TypeMinimum:     opMin,
-	TypeMaximum:     opMax,
-	TypeGreaterThan: opGt,
-	TypeLessThan:    opLt,
-	TypeEqualTo:     opEq,
+		return s
+	},
+	TypeMinimum: func(v []int) int {
+		s := math.MaxInt
+		for _, n := range v {
+			if n < s {
+				s = n
+			}
+		}
+		return s
+	},
+	TypeMaximum: func(v []int) int {
+		s := 0
+		for _, n := range v {
+			if n > s {
+				s = n
+			}
+		}
+		return s
+	},
+	TypeGreaterThan: func(v []int) int {
+		if v[0] > v[1] {
+			return 1
+		}
+		return 0
+	},
+	TypeLessThan: func(v []int) int {
+		if v[0] < v[1] {
+			return 1
+		}
+		return 0
+	},
+	TypeEqualTo: func(v []int) int {
+		if v[0] == v[1] {
+			return 1
+		}
+		return 0
+	},
 }
 
 type bitReader struct {
