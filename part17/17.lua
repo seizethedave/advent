@@ -10,13 +10,6 @@ MinY = -10
 MaxY = -5
 ]]
 
-
---[[
-With increasing values of dx starting with 1:
-	Find the largest dy that lands us in the target zone. The max y is the answer.
-	If no dy results in the target zone, continue with dx+1.
-]]
-
 function Simulate(dx, dy)
 	local x = 0
 	local y = 0
@@ -91,15 +84,37 @@ function FindDy(dx)
 	return dy
 end
 
-local from = math.floor((math.sqrt(8 * MinX + 1) - 1) / 2)
-local to = math.ceil((math.sqrt(8 * MaxX + 1) - 1) / 2)
+function Part1()
+	-- smallest dx that can get us there with the leftward drag, based on
+	-- https://www.wolframalpha.com/input/?i=m%3D+%28sum+of+x+from+1+to+x%29%2C+solve+for+x
+	local from = math.floor((math.sqrt(8 * MinX + 1) - 1) / 2)
+	-- `to` is probably bogus but works accidentally.
+	local to = math.ceil((math.sqrt(8 * MaxX + 1) - 1) / 2)
 
-print(from, to)
-
-for dx = from, to do
-	local dy = FindDy(dx)
-	if dy ~= nil then
-		print(dx, dy)
+	for dx = from, to do
+		local dy = FindDy(dx)
+		if dy ~= nil then
+			print(dx, dy)
+		end
+		print("  ", dx)
 	end
-	print("  ", dx)
 end
+
+function Part2()
+	local hits = 0
+	-- naive grid search.
+	for dx = 1, MaxX do
+		for dy = MinY, 9999 do
+			local res, _ = Simulate(dx, dy)
+			if res == 0 then
+				hits = hits + 1
+			elseif res > 0 then
+				break
+			end
+		end
+	end
+
+	print(hits)
+end
+
+Part2()
