@@ -9,26 +9,27 @@ def reduce(num):
         if isinstance(n, int):
             if n > 9:
                 # split
-                return [n // 2, n - (n // 2)]
+                half = n // 2
+                return [half, n - half]
             elif carry is not None:
                 n += carry
                 carry = None
             return n
-        else:
-            # a list
-            if depth >= 4:
-                # explode
-                if prevlist is not None:
-                    prevlist[0] += n[0]
-                carry = n[1]
-                return 0
 
-            if isinstance(n[0], int):
-                prevlist = n
+        # otherwise a list
+        if depth >= 4:
+            # explode
+            if prevlist is not None:
+                prevlist[0] += n[0]
+            carry = n[1]
+            return 0
 
-            n[0] = reduce_search(n[0], depth + 1)
-            n[1] = reduce_search(n[1], depth + 1)
-            return n
+        if isinstance(n[0], int):
+            prevlist = n
+
+        n[0] = reduce_search(n[0], depth + 1)
+        n[1] = reduce_search(n[1], depth + 1)
+        return n
     
     return reduce_search(num, 0)
 
