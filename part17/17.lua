@@ -32,19 +32,13 @@ function Simulate(dx, dy)
 		if dx == 0 and x < MinX then
 			-- undershot and we'll never get there.
 			return -1, maxY
-		end
-
-		if x > MaxX and y > MaxY then
+		elseif x > MaxX and y > MaxY then
 			-- overshot
 			return 1, maxY
-		end
-
-		if x >= MinX and x <= MaxX and y >= MinY and y <= MaxY then
+		elseif x >= MinX and x <= MaxX and y >= MinY and y <= MaxY then
 			-- Within bounds.
 			return 0, maxY
-		end
-
-		if y < MinY then
+		elseif y < MinY then
 			if x < MaxX then
 				-- undershot
 				return -1, maxY
