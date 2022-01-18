@@ -1,6 +1,6 @@
-from ast import Str
 import sys
 from typing import Tuple, Union, Optional
+import unittest
 
 
 class Node(object):
@@ -22,8 +22,7 @@ def parse(s: str) -> Node:
         nonlocal prev
         c = s[i]
         if c.isnumeric():
-            # A numeric leaf node. Thread a backwards path through leaves with
-            # `prev` pointers.
+            # A numeric leaf node. Thread prev/next pointers between leaves.
             ret = Node(int(c), prev)
             if prev is not None:
                 prev.next = ret
@@ -101,10 +100,31 @@ def parse_reduce(s):
     print("before:", parsed)
     print("after:", reduce_tree(parsed))
 
-parse_reduce("[[[[[9,8],1],2],3],4]")
-parse_reduce("[7,[6,[5,[4,[3,2]]]]]")
-parse_reduce("[[6,[5,[4,[3,2]]]],1]")
-parse_reduce("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]")
+
+class Tests(unittest.TestCase):
+    def test_reduce(self):
+        self.assertEqual(
+            repr(reduce_tree(parse("[[[[[9,8],1],2],3],4]"))),
+            "[[[[0,9],2],3],4]"
+        )
+        self.assertEqual(
+            repr(reduce_tree(parse("[7,[6,[5,[4,[3,2]]]]]"))),
+            "[7,[6,[5,[7,0]]]]"
+        )
+        self.assertEqual(
+            repr(reduce_tree(parse("[[6,[5,[4,[3,2]]]],1]"))),
+            "[[6,[5,[7,0]]],3]"
+        )
+        self.assertEqual(
+            repr(reduce_tree(parse("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]"))),
+            "[[3,[2,[8,0]]],[9,[5,[7,0]]]]"
+        )
+
+
+
+
+if "__main__" == __name__:
+    unittest.main()
 
 """
 if "__main__" == __name__:
