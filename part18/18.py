@@ -7,15 +7,17 @@ class Node(object):
     def __init__(self, val: Union[int, Tuple['Node', 'Node']], prev: Optional['Node']=None):
         self.val = val
         self.prev = prev
+        self.next: Optional[Node] = None
 
     def __repr__(self) -> str:
-        # return f"Node({self.val})" if self.prev is None else f"Node({self.val}, prev={self.prev.val})"
+        #nextstr = "nil" if self.next is None else self.next.val
+        #return f"Node({self.val})" if self.prev is None else f"Node({self.val}, prev={self.prev.val}, next={nextstr})"
         if isinstance(self.val, int):
             return repr(self.val)
         return f"[{self.val[0]},{self.val[1]}]"
 
 def parse(s: str) -> Node:
-    prev = None
+    prev: Node = None
     def parse_inner(i: int) -> Tuple[Node, int]:
         nonlocal prev
         c = s[i]
@@ -23,6 +25,8 @@ def parse(s: str) -> Node:
             # A numeric leaf node. Thread a backwards path through leaves with
             # `prev` pointers.
             ret = Node(int(c), prev)
+            if prev is not None:
+                prev.next = ret
             prev = ret
             return (ret, i + 1)
         elif c == "[":
@@ -51,16 +55,22 @@ def reduce_tree(head: Node) -> Node:
                 half = n.val // 2
                 lhs = Node(half, n.prev)
                 rhs = Node(n.val - half, lhs)
+                lhs.next = rhs
+                rhs.next = n.next
+                if n.prev is not None:
+                    n.prev.next = lhs
+                if n.next is not None:
+                    n.next.prev = rhs
                 n.val = (lhs, rhs)
                 return reduce_tree_scan(n, depth + 1)
 
             return n
 
         assert isinstance(n.val, tuple)
-        assert depth < 5
+        #assert depth < 5
         lhs, rhs = n.val
 
-        if depth == 4:
+        if depth >= 4:
             # explode
             if lhs.prev is not None:
                 assert isinstance(lhs.prev.val, int)
@@ -70,6 +80,11 @@ def reduce_tree(head: Node) -> Node:
             carry = rhs.val
             n.val = 0
             n.prev = lhs.prev
+            n.next = rhs.next
+            if lhs.prev is not None:
+                lhs.prev.next = n
+            if rhs.next is not None:
+                rhs.next.prev = n
             return n
     
         n.val = (
