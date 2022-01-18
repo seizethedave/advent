@@ -2,6 +2,18 @@ import sys
 from typing import Tuple, Union, Optional
 import unittest
 
+def search_leaves(head, predicate) -> Optional['Node']:
+    nodes = [head]
+    while nodes:
+        n = nodes.pop()
+        if n.is_leaf:
+            if predicate(n):
+                return n
+        else:
+            nodes.extend(n.val)
+    else:
+        return None
+
 
 class Node(object):
     def __init__(self, val: Union[int, Tuple['Node', 'Node']], prev: Optional['Node']=None):
@@ -15,6 +27,28 @@ class Node(object):
         if isinstance(self.val, int):
             return repr(self.val)
         return f"[{self.val[0]},{self.val[1]}]"
+
+    @property
+    def is_leaf(self):
+        return isinstance(self.val, int)
+
+    @property
+    def head_node(self):
+        return search_leaves(self, lambda n: n.prev is None)
+
+    @property
+    def tail_node(self):
+        return search_leaves(self, lambda n: n.next is None)
+
+    def add(self, other: 'Node'):
+        lhs_tail = self.tail_node
+        assert lhs_tail is not None
+        rhs_head = other.head_node
+        assert rhs_head is not None
+        lhs_tail.next = rhs_head
+        rhs_head.prev = lhs_tail
+        return Node((self, other))
+
 
 def parse(s: str) -> Node:
     prev: Node = None
@@ -40,15 +74,8 @@ def parse(s: str) -> Node:
 
 
 def reduce_tree(head: Node) -> Node:
-    carry = 0
-
     def reduce_tree_scan(n: Node, depth: int) -> Node:
-        nonlocal carry
-
         if isinstance(n.val, int):
-            n.val += carry
-            carry = 0
-
             if n.val > 9:
                 # split
                 half = n.val // 2
@@ -73,10 +100,12 @@ def reduce_tree(head: Node) -> Node:
             # explode
             if lhs.prev is not None:
                 assert isinstance(lhs.prev.val, int)
-                lhs.prev.val += lhs.val # TODO <- split if needed.
-                if lhs.prev.val > 9:
-                    print("NEED TO SPLIT", lhs.prev.val)
-            carry = rhs.val
+                lhs.prev.val += lhs.val
+                reduce_tree(lhs.prev) # TODO: store depth in node so we know what the depth of lhs.prev is.
+            if rhs.next is not None:
+                assert isinstance(rhs.next.val, int)
+                rhs.next.val += rhs.val
+                reduce_tree(rhs.next) # ditto
             n.val = 0
             n.prev = lhs.prev
             n.next = rhs.next
@@ -93,7 +122,6 @@ def reduce_tree(head: Node) -> Node:
         return n
         
     return reduce_tree_scan(head, 0)
-
 
 def parse_reduce(s):
     parsed = parse(s)
@@ -120,28 +148,28 @@ class Tests(unittest.TestCase):
             "[[3,[2,[8,0]]],[9,[5,[7,0]]]]"
         )
 
+    def test_reduce_bigone(self):
+        self.assertEqual(
+            repr(reduce_tree(parse("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]"))),
+            "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"
+        )
 
 
 
 if "__main__" == __name__:
     unittest.main()
 
-"""
-if "__main__" == __name__:
     total = None
 
     for line in sys.stdin:
-        entry = eval(line)
+        num = parse(line)
 
         if total is None:
-            total = entry
+            total = num
         else:
-            total = reduce([total, entry])
+            total = reduce_tree(total.add(num))
 
-        print(entry)
+        print(num)
         print("   ", total)
 
     print(total)
-
-    print(reduce([[[[[4,3],4],4],[7,[[8,4],9]]],  [1,1]]))
-"""
