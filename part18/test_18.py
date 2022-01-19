@@ -5,29 +5,29 @@ from day18 import *
 class Tests(unittest.TestCase):
     def test_reduce(self):
         self.assertEqual(
-            repr(reduce_tree(parse("[[[[[9,8],1],2],3],4]"))),
+            repr(parse("[[[[[9,8],1],2],3],4]").reduce()),
             "[[[[0,9],2],3],4]"
         )
         self.assertEqual(
-            repr(reduce_tree(parse("[7,[6,[5,[4,[3,2]]]]]"))),
+            repr(parse("[7,[6,[5,[4,[3,2]]]]]").reduce()),
             "[7,[6,[5,[7,0]]]]"
         )
         self.assertEqual(
-            repr(reduce_tree(parse("[[6,[5,[4,[3,2]]]],1]"))),
+            repr(parse("[[6,[5,[4,[3,2]]]],1]").reduce()),
             "[[6,[5,[7,0]]],3]"
         )
         self.assertEqual(
-            repr(reduce_tree(parse("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]"))),
+            repr(parse("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]").reduce()),
             "[[3,[2,[8,0]]],[9,[5,[7,0]]]]"
         )
 
     def test_reduce_big(self):
         self.assertEqual(
-            repr(reduce_tree(parse("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]"))),
+            repr(parse("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]").reduce()),
             "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"
         )
         self.assertEqual(
-            repr(reduce_tree(parse("[[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]],[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]]"))),
+            repr(parse("[[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]],[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]]").reduce()),
             "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]"
         )
 

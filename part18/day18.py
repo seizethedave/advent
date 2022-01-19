@@ -9,7 +9,7 @@ class Node(object):
         self.depth = depth
 
     def __eq__(self, other):
-        return isinstance(other, Node) and self.__dict__ == other.__dict__
+        return isinstance(other, Node) and vars(self) == vars(other)
 
     def __repr__(self) -> str:
         #nextstr = "nil" if self.next is None else self.next.val
@@ -49,11 +49,11 @@ class Node(object):
         lhs_tail.next = rhs_head
         rhs_head.prev = lhs_tail
 
-        def incr(node):
+        def incr_depth(node):
             node.depth += 1
 
-        self.map_nodes(incr)
-        other.map_nodes(incr)
+        self.map_nodes(incr_depth)
+        other.map_nodes(incr_depth)
         return Node((self, other))
 
     def validate(self):
@@ -69,7 +69,55 @@ class Node(object):
     def magnitude(self):
         pass
 
+    def reduce(self):
+        def reduce_tree_scan(n: Node) -> Node:
+            if isinstance(n.val, int):
+                if n.val > 9:
+                    # split
+                    half = n.val // 2
+                    lhs = Node(half, n.prev)
+                    rhs = Node(n.val - half, lhs)
+                    lhs.depth = rhs.depth = (n.depth + 1)
+                    lhs.next = rhs
+                    rhs.next = n.next
+                    if n.prev is not None:
+                        n.prev.next = lhs
+                    if n.next is not None:
+                        n.next.prev = rhs
+                    n.val = (lhs, rhs)
+                    reduce_tree_scan(n)
+                    self.validate()
+                return
 
+            assert isinstance(n.val, tuple)
+            lhs, rhs = n.val
+
+            if n.depth >= 4:
+                # explode
+                if lhs.prev is not None:
+                    assert isinstance(lhs.prev.val, int)
+                    lhs.prev.next = n
+                    lhs.prev.val += lhs.val
+                if rhs.next is not None:
+                    assert isinstance(rhs.next.val, int)
+                    rhs.next.prev = n
+                    rhs.next.val += rhs.val
+                n.val = 0
+                n.prev = lhs.prev
+                n.next = rhs.next
+                if lhs.prev:
+                    reduce_tree_scan(lhs.prev)
+                if rhs.next:
+                    reduce_tree_scan(rhs.next)
+                self.validate()
+                return
+
+            reduce_tree_scan(lhs)
+            reduce_tree_scan(rhs)
+        
+        reduce_tree_scan(self)
+        return self
+        
 def parse(s: str) -> Node:
     prev: Node = None
     def parse_inner(i: int, depth: int) -> Tuple[Node, int]:
@@ -96,55 +144,6 @@ def parse(s: str) -> Node:
     n.validate()
     return n
 
-def reduce_tree(head: Node) -> Node:
-    def reduce_tree_scan(n: Node) -> Node:
-        if isinstance(n.val, int):
-            if n.val > 9:
-                # split
-                half = n.val // 2
-                lhs = Node(half, n.prev)
-                rhs = Node(n.val - half, lhs)
-                lhs.depth = rhs.depth = (n.depth + 1)
-                lhs.next = rhs
-                rhs.next = n.next
-                if n.prev is not None:
-                    n.prev.next = lhs
-                if n.next is not None:
-                    n.next.prev = rhs
-                n.val = (lhs, rhs)
-                reduce_tree_scan(n)
-                head.validate()
-            return
-
-        assert isinstance(n.val, tuple)
-        lhs, rhs = n.val
-
-        if n.depth >= 4:
-            # explode
-            if lhs.prev is not None:
-                assert isinstance(lhs.prev.val, int)
-                lhs.prev.next = n
-                lhs.prev.val += lhs.val
-            if rhs.next is not None:
-                assert isinstance(rhs.next.val, int)
-                rhs.next.prev = n
-                rhs.next.val += rhs.val
-            n.val = 0
-            n.prev = lhs.prev
-            n.next = rhs.next
-            if lhs.prev:
-                reduce_tree_scan(lhs.prev)
-            if rhs.next:
-                reduce_tree_scan(rhs.next)
-            head.validate()
-            return
-
-        reduce_tree_scan(lhs)
-        reduce_tree_scan(rhs)
-        
-    reduce_tree_scan(head)
-    return head
-
 
 if "__main__" == __name__:
     total = None
@@ -158,7 +157,7 @@ if "__main__" == __name__:
         else:
             total = total.add(num)
             print("added=", total)
-            total = reduce_tree(total)
+            total.reduce()
 
         print("= subtotal", total)
 
