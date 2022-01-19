@@ -21,10 +21,14 @@ class Tests(unittest.TestCase):
             "[[3,[2,[8,0]]],[9,[5,[7,0]]]]"
         )
 
-    def test_reduce_bigone(self):
+    def test_reduce_big(self):
         self.assertEqual(
             repr(reduce_tree(parse("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]"))),
             "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"
+        )
+        self.assertEqual(
+            repr(reduce_tree(parse("[[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]],[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]]"))),
+            "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]"
         )
 
     def test_node_eq(self):
@@ -37,3 +41,39 @@ class Tests(unittest.TestCase):
         self.assertNotEqual(Node(1, depth=2), Node(1, depth=20))
         self.assertNotEqual(Node(93), Node(94))
 
+    def test_node_add(self):
+        one = Node(1)
+        two = Node(2)
+        three = one.add(two)
+        self.assertEqual(
+            three,
+            Node((one, two))
+        )
+
+        self.assertEqual(three.depth, 0)
+        self.assertEqual(one.depth, 1)
+        self.assertEqual(two.depth, 1)
+        self.assertIs(one.next, two)
+        self.assertIs(two.prev, one)
+        self.assertIsNone(three.prev)
+        self.assertIsNone(three.next)
+
+    def test_node_map(self):
+        ct = 0
+        def count_em(node):
+            nonlocal ct
+            ct += 1
+            
+        n = Node(6)
+        n.map_nodes(count_em)
+        self.assertEqual(ct, 1)
+
+        ct = 0
+        n = Node(
+            (
+                Node((Node(1), Node(2))),
+                Node((Node(3), Node(4)))
+            )
+        )
+        n.map_nodes(count_em)
+        self.assertEqual(ct, 7)
