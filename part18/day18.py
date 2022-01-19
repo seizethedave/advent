@@ -1,6 +1,12 @@
 import sys
 from typing import Tuple, Union, Optional
 
+DEBUG = False
+
+def dprint(s):
+    if DEBUG:
+        print(s)
+
 class Node(object):
     def __init__(self, val: Union[int, Tuple['Node', 'Node']], prev: Optional['Node']=None, nxt: Optional['Node']=None, depth: int=0):
         self.val = val
@@ -73,10 +79,14 @@ class Node(object):
         return 3 * lhs.magnitude() + 2 * rhs.magnitude()
 
     def reduce(self):
-        def reduce_tree_scan(n: Node) -> Node:
+        def reduce_tree_scan(n: Node, calldepth) -> Node:
             if isinstance(n.val, int):
                 if n.val > 9:
                     # split
+
+                    dprint(f"{' '*calldepth}splitting {n.val}")
+                    dprint(f"{' '*calldepth}in {self}")
+
                     half = n.val // 2
                     lhs = Node(half, n.prev)
                     rhs = Node(n.val - half, lhs)
@@ -85,11 +95,23 @@ class Node(object):
                     rhs.next = n.next
                     if n.prev is not None:
                         n.prev.next = lhs
+                        n.prev = None
                     if n.next is not None:
                         n.next.prev = rhs
+                        n.next = None
                     n.val = (lhs, rhs)
-                    reduce_tree_scan(n)
+
+                    dprint(f"{' '*calldepth}-> {self}")
+                    before = repr(self)
+                    reduce_tree_scan(n, calldepth+1)
+                    after = repr(self)
+
+                    if before != after:
+                        dprint(f"{' '*calldepth}after split reduce:")
+                        dprint(f"{' '*calldepth}-> {after}")
+
                     self.validate()
+                    
                 return
 
             assert isinstance(n.val, tuple)
@@ -97,6 +119,8 @@ class Node(object):
 
             if n.depth >= 4:
                 # explode
+                dprint(f"{' '*calldepth}exploding {n} (depth {n.depth})")
+                dprint(f"{' '*calldepth}in {self}")
                 if lhs.prev is not None:
                     assert isinstance(lhs.prev.val, int)
                     lhs.prev.next = n
@@ -108,18 +132,36 @@ class Node(object):
                 n.val = 0
                 n.prev = lhs.prev
                 n.next = rhs.next
+                dprint(f"{' '*calldepth}-> {self}")
+                before = repr(self)
                 if lhs.prev:
-                    reduce_tree_scan(lhs.prev)
+                    reduce_tree_scan(lhs.prev, calldepth+1)
                 if rhs.next:
-                    reduce_tree_scan(rhs.next)
+                    reduce_tree_scan(rhs.next, calldepth+1)
+                after = repr(self)
+                if before != after:
+                    dprint(f"{' '*calldepth}after explode reduce")
+                    dprint(f"{' '*calldepth}-> {after}")
                 self.validate()
                 return
 
-            reduce_tree_scan(lhs)
-            reduce_tree_scan(rhs)
+            reduce_tree_scan(lhs, calldepth+1)
+            reduce_tree_scan(rhs, calldepth+1)
         
-        reduce_tree_scan(self)
+        reduce_tree_scan(self, 0)
         return self
+
+    def dump(self, level=0):
+        indent = " " * level
+        if self.is_leaf:
+            print(f"{indent}Node({id(self)} d={self.depth} val={self.val})")
+        else:
+            print(f"{indent}Node({id(self)} d={self.depth}")
+            lhs, rhs = self.val
+            lhs.dump(level+1)
+            rhs.dump(level+1)
+            print(f"{indent})")
+
         
 def parse(s: str) -> Node:
     prev: Node = None

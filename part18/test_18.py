@@ -1,6 +1,6 @@
 import unittest
 
-from day18 import *
+from day18 import parse, Node
 
 class Tests(unittest.TestCase):
     def test_reduce(self):
@@ -21,15 +21,24 @@ class Tests(unittest.TestCase):
             "[[3,[2,[8,0]]],[9,[5,[7,0]]]]"
         )
 
-    def test_reduce_big(self):
+    def test_reduce_big1(self):
         self.assertEqual(
             repr(parse("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]").reduce()),
             "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"
         )
+
+    def test_reduce_big2(self):
         self.assertEqual(
             repr(parse("[[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]],[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]]").reduce()),
             "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]"
         )
+
+    def test_reduce_2(self):
+        self.assertEqual(
+            repr(parse("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]").reduce()),
+            "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"
+        )
+
 
     def test_node_eq(self):
         self.assertEqual(Node(93), Node(93))
