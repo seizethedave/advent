@@ -67,7 +67,10 @@ class Node(object):
         scan(self, 0)
 
     def magnitude(self):
-        pass
+        if self.is_leaf:
+            return self.val
+        lhs, rhs = self.val
+        return 3 * lhs.magnitude() + 2 * rhs.magnitude()
 
     def reduce(self):
         def reduce_tree_scan(n: Node) -> Node:

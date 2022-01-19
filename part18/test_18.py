@@ -77,3 +77,13 @@ class Tests(unittest.TestCase):
         )
         n.map_nodes(count_em)
         self.assertEqual(ct, 7)
+
+    def test_node_mag(self):
+        self.assertEqual(
+            parse("[[1,2],[[3,4],5]]").magnitude(),
+            143
+        )
+        self.assertEqual(
+            parse("[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]").magnitude(),
+            3488
+        )
