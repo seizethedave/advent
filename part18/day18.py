@@ -1,5 +1,6 @@
 import sys
 from typing import Tuple, Union, Optional
+import itertools
 
 class Recombobulate(Exception):
     pass
@@ -177,5 +178,13 @@ def part1():
     print(total)
     print(total.magnitude())
 
+def part2():
+    mag = 0
+    for lhs, rhs in itertools.product(sys.stdin.readlines(), repeat=2):
+        v = parse(lhs).add(parse(rhs))
+        v.reduce()
+        mag = max(mag, v.magnitude())
+    print(mag)
+
 if "__main__" == __name__:
-    part1()
+    part2()
