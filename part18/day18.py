@@ -42,7 +42,7 @@ class Node(object):
         for n in self.iter_nodes():
             fn(n)
 
-    def add(self, other: 'Node'):
+    def add(self, other: 'Node') -> 'Node':
         lhs_tail = self.search_leaves(lambda n: n.next is None)
         assert lhs_tail is not None
         rhs_head = other.search_leaves(lambda n: n.prev is None)
@@ -56,16 +56,6 @@ class Node(object):
         self.map_nodes(incr_depth)
         other.map_nodes(incr_depth)
         return Node((self, other))
-
-    def validate(self):
-        def scan(n, depth):
-            if n.depth != depth:
-                raise Exception(f"invalid depth. expected {depth}, got {n.depth}")
-            if isinstance(n.val, tuple):
-                lhs, rhs = n.val
-                scan(lhs, depth + 1)
-                scan(rhs, depth + 1)
-        scan(self, 0)
 
     def magnitude(self):
         if self.is_leaf:
@@ -171,25 +161,21 @@ def parse(s: str) -> Node:
             return (node, i + 1)
 
     n, _ = parse_inner(0, 0)
-    n.validate()
     return n
 
-
-if "__main__" == __name__:
+def part1():
     total = None
 
     for line in sys.stdin:
         num = parse(line)
-        print(num)
-
         if total is None:
             total = num
         else:
             total = total.add(num)
-            print("added=", total)
             total.reduce()
-
-        print("= subtotal", total)
 
     print(total)
     print(total.magnitude())
+
+if "__main__" == __name__:
+    part1()
