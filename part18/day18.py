@@ -1,11 +1,9 @@
 import sys
 from typing import Tuple, Union, Optional
 
-DEBUG = False
+DEBUG = True
+dprint = print if DEBUG else (lambda s: None)
 
-def dprint(s):
-    if DEBUG:
-        print(s)
 
 class Node(object):
     def __init__(self, val: Union[int, Tuple['Node', 'Node']], prev: Optional['Node']=None, nxt: Optional['Node']=None, depth: int=0):
@@ -83,7 +81,6 @@ class Node(object):
             if isinstance(n.val, int):
                 if n.val > 9:
                     # split
-
                     dprint(f"{' '*calldepth}splitting {n.val}")
                     dprint(f"{' '*calldepth}in {self}")
 
