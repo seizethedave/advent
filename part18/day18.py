@@ -1,9 +1,8 @@
 import sys
 from typing import Tuple, Union, Optional
 
-DEBUG = True
-dprint = print if DEBUG else (lambda s: None)
-
+class Recombobulate(Exception):
+    pass
 
 class Node(object):
     def __init__(self, val: Union[int, Tuple['Node', 'Node']], prev: Optional['Node']=None, nxt: Optional['Node']=None, depth: int=0):
@@ -16,9 +15,7 @@ class Node(object):
         return isinstance(other, Node) and vars(self) == vars(other)
 
     def __repr__(self) -> str:
-        #nextstr = "nil" if self.next is None else self.next.val
-        #return f"Node({self.val})" if self.prev is None else f"Node({self.val}, prev={self.prev.val}, next={nextstr})"
-        if isinstance(self.val, int):
+        if self.is_leaf:
             return repr(self.val)
         return f"[{self.val[0]},{self.val[1]}]"
 
@@ -76,14 +73,36 @@ class Node(object):
         lhs, rhs = self.val
         return 3 * lhs.magnitude() + 2 * rhs.magnitude()
 
-    def reduce(self):
-        def reduce_tree_scan(n: Node, calldepth) -> Node:
-            if isinstance(n.val, int):
+    def reduce_explode(self):
+        def rexp(n):
+            if n.is_leaf:
+                return
+            lhs, rhs = n.val
+
+            if n.depth >= 4:
+                # explode
+                if lhs.prev is not None:
+                    assert isinstance(lhs.prev.val, int)
+                    lhs.prev.next = n
+                    lhs.prev.val += lhs.val
+                if rhs.next is not None:
+                    assert isinstance(rhs.next.val, int)
+                    rhs.next.prev = n
+                    rhs.next.val += rhs.val
+                n.val = 0
+                n.prev = lhs.prev
+                n.next = rhs.next
+                return
+
+            rexp(lhs)
+            rexp(rhs)
+        rexp(self)
+
+    def reduce_split(self):
+        def rsplit(n):
+            if n.is_leaf:
                 if n.val > 9:
                     # split
-                    dprint(f"{' '*calldepth}splitting {n.val}")
-                    dprint(f"{' '*calldepth}in {self}")
-
                     half = n.val // 2
                     lhs = Node(half, n.prev)
                     rhs = Node(n.val - half, lhs)
@@ -97,55 +116,24 @@ class Node(object):
                         n.next.prev = rhs
                         n.next = None
                     n.val = (lhs, rhs)
-
-                    dprint(f"{' '*calldepth}-> {self}")
-                    before = repr(self)
-                    reduce_tree_scan(n, calldepth+1)
-                    after = repr(self)
-
-                    if before != after:
-                        dprint(f"{' '*calldepth}after split reduce:")
-                        dprint(f"{' '*calldepth}-> {after}")
-
-                    self.validate()
-                    
+                    # Signal that we need to re-explode.
+                    raise Recombobulate()
                 return
-
-            assert isinstance(n.val, tuple)
             lhs, rhs = n.val
+            rsplit(lhs)
+            rsplit(rhs)
 
-            if n.depth >= 4:
-                # explode
-                dprint(f"{' '*calldepth}exploding {n} (depth {n.depth})")
-                dprint(f"{' '*calldepth}in {self}")
-                if lhs.prev is not None:
-                    assert isinstance(lhs.prev.val, int)
-                    lhs.prev.next = n
-                    lhs.prev.val += lhs.val
-                if rhs.next is not None:
-                    assert isinstance(rhs.next.val, int)
-                    rhs.next.prev = n
-                    rhs.next.val += rhs.val
-                n.val = 0
-                n.prev = lhs.prev
-                n.next = rhs.next
-                dprint(f"{' '*calldepth}-> {self}")
-                before = repr(self)
-                if lhs.prev:
-                    reduce_tree_scan(lhs.prev, calldepth+1)
-                if rhs.next:
-                    reduce_tree_scan(rhs.next, calldepth+1)
-                after = repr(self)
-                if before != after:
-                    dprint(f"{' '*calldepth}after explode reduce")
-                    dprint(f"{' '*calldepth}-> {after}")
-                self.validate()
-                return
-
-            reduce_tree_scan(lhs, calldepth+1)
-            reduce_tree_scan(rhs, calldepth+1)
+        rsplit(self)
         
-        reduce_tree_scan(self, 0)
+    def reduce(self):
+        while True:
+            self.reduce_explode()
+            try:
+                self.reduce_split()
+            except Recombobulate:
+                continue
+            else:
+                break
         return self
 
     def dump(self, level=0):
@@ -204,3 +192,4 @@ if "__main__" == __name__:
         print("= subtotal", total)
 
     print(total)
+    print(total.magnitude())
