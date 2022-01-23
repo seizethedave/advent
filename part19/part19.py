@@ -1,4 +1,4 @@
-import itertools
+from itertools import chain
 import re
 import sys
 
@@ -71,30 +71,20 @@ class Scanner(object):
                 yield changed_points
                 stack.append((changed_points, next_xfs))
 
-    def translated_points(self):
-        return [translate(pt, self.pos) for pt in self.points]
-
     def match_with(self, other):
-        my_points = sorted(self.points)
-        s1 = set(my_points)
-
-        for root1 in my_points:
+        s1 = set(self.points)
+        for root1 in self.points:
             for other_points in other.all_rotations():
-                other_points.sort()
-
                 for root2 in other_points:
                     offset = (root1[0] - root2[0], root1[1] - root2[1], root1[2] - root2[2])
                     s2 = set(translate(pt, offset) for pt in other_points)
-                    overlap = s1 & s2
-                    if len(overlap) >= 12:
-                        if self.pos is not None:
-                            other.pos = translate(self.pos, offset)
-                            print(f"{other.num}.pos <- {other.pos}")
-                        else:
-                            print(f"{self.num}.pos was None")
+                    if len(s1 & s2) >= 12:
+                        assert self.pos is not None
+                        print(f"Match {self.num} & {other.num}")
+                        other.points = list(s2)
+                        other.pos = translate(self.pos, offset)
                         return True
         return False
-
 
 def part1():
     scanners = []
@@ -124,9 +114,10 @@ def part1():
                 unmatched.discard(root)
                 unmatched.discard(other)
                 matched.append(other)
-                print(f"Match {root.num}, {other.num}")
 
-    print(f"done matching. {len(unmatched)} / {len(scanners)}")
+    assert len(unmatched) == 0
+    all_points = set(chain.from_iterable(s.points for s in scanners))
+    print(len(all_points))
 
 if __name__ == "__main__":
     part1()
