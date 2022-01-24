@@ -56,6 +56,9 @@ xforms = [
 def translate(pt, skew):
     return (pt[0] + skew[0], pt[1] + skew[1], pt[2] + skew[2])
 
+def manhattan(pt1, pt2):
+    return abs(pt1[0] - pt2[0]) + abs(pt1[1] - pt2[1]) + abs(pt1[2] - pt2[2])
+
 class Scanner(object):
     def __init__(self, num):
         self.num = num
@@ -82,11 +85,11 @@ class Scanner(object):
                         assert self.pos is not None
                         print(f"Match {self.num} & {other.num}")
                         other.points = list(s2)
-                        other.pos = translate(self.pos, offset)
+                        other.pos = offset
                         return True
         return False
 
-def part1():
+def go():
     scanners = []
 
     for line in sys.stdin:
@@ -115,9 +118,17 @@ def part1():
                 unmatched.discard(other)
                 matched.append(other)
 
+    # part 1:
     assert len(unmatched) == 0
     all_points = set(chain.from_iterable(s.points for s in scanners))
     print(len(all_points))
 
+    # part 2:
+    max_dist = 0
+    for i, s1 in enumerate(scanners):
+        for s2 in scanners[i+1:]:
+            max_dist = max(max_dist, manhattan(s1.pos, s2.pos))
+    print(max_dist)
+
 if __name__ == "__main__":
-    part1()
+    go()
