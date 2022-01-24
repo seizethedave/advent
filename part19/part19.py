@@ -1,4 +1,4 @@
-from itertools import chain
+from itertools import chain, combinations
 import re
 import sys
 
@@ -124,11 +124,7 @@ def go():
     print(len(all_points))
 
     # part 2:
-    max_dist = 0
-    for i, s1 in enumerate(scanners):
-        for s2 in scanners[i+1:]:
-            max_dist = max(max_dist, manhattan(s1.pos, s2.pos))
-    print(max_dist)
+    print(max(manhattan(s1.pos, s2.pos) for s1, s2 in combinations(scanners, 2)))
 
 if __name__ == "__main__":
     go()
