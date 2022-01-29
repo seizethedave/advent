@@ -10,9 +10,7 @@ import (
 func str2bools(s string) []bool {
 	bools := make([]bool, len(s))
 	for i, c := range s {
-		if c == '#' {
-			bools[i] = true
-		}
+		bools[i] = (c == '#')
 	}
 	return bools
 }
@@ -107,9 +105,12 @@ func main() {
 		}
 	}
 
+	//img.print()
 	fmt.Println(len(img.img))
-	image2 := render(algo, img)
-	fmt.Println(len(image2.img))
-	image3 := render(algo, image2)
-	fmt.Println(len(image3.img))
+	img = render(algo, img)
+	//img.print()
+	fmt.Println(len(img.img))
+	img = render(algo, img)
+	//img.print()
+	fmt.Println(len(img.img))
 }
