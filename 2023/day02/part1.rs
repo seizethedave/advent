@@ -34,14 +34,8 @@ fn main() {
         };
         // Skip the colon and the following space.
         l = l[pos+2..].to_string();
+        let game_possible = l.split("; ").all(hand_possible);
 
-        let mut game_possible = true;
-        for hand in l.split("; ") {
-            if !hand_possible(hand) {
-                game_possible = false;
-                break;
-            }
-        }
         if game_possible {
             score += lineno;
         }
