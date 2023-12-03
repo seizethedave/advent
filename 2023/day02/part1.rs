@@ -22,11 +22,8 @@ fn hand_possible(g: &str) -> bool {
 }
 
 fn main() {
-    let lines = io::stdin().lines();
-    let mut lineno = 0;
     let mut score = 0;
-    for line in lines {
-        lineno += 1;
+    for (lineno, line) in io::stdin().lines().enumerate() {
         let mut l = line.unwrap();
         let pos = match l.find(":") {
             None => return,
@@ -34,10 +31,8 @@ fn main() {
         };
         // Skip the colon and the following space.
         l = l[pos+2..].to_string();
-        let game_possible = l.split("; ").all(hand_possible);
-
-        if game_possible {
-            score += lineno;
+        if l.split("; ").all(hand_possible) {
+            score += lineno + 1;
         }
     }
 
