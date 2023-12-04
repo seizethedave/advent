@@ -48,21 +48,21 @@ fn main() {
     }
 
     fn terminate_number(gr: &Vec<char>, width: usize, y: usize, start: usize, end: usize) -> i32 {
-        if near_symbol(gr, width, y, start, end) {
-            let mut tally: i32 = 0;
-            for i in start..=end {
-                let (valid, c) = grid_get(gr, width, y, i);
-                if !valid {
-                    panic!("terminate_number expected valid spots");
-                }
-                if let Some(cn) = c.to_digit(10) {
-                    tally = tally * 10 + (cn as i32);
-                }
-            }
-            tally
-        } else {
-            0
+        if !near_symbol(gr, width, y, start, end) {
+            return 0;
         }
+
+        let mut tally: i32 = 0;
+        for i in start..=end {
+            let (valid, c) = grid_get(gr, width, y, i);
+            if !valid {
+                panic!("terminate_number expected valid spots");
+            }
+            if let Some(cn) = c.to_digit(10) {
+                tally = tally * 10 + (cn as i32);
+            }
+        }
+        tally
     }
 
     let mut score = 0;
