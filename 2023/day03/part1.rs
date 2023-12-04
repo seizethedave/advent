@@ -1,12 +1,12 @@
 use std::io;
 
-struct Grid<'a> {
-    g: &'a Vec<char>,
+struct Grid {
+    g: Vec<char>,
     width: usize,
     height: usize,
 }
 
-impl Grid<'_> {
+impl Grid {
     fn get(&self, y: usize, x: usize) -> (bool, char) {
         let pos = (y * self.width + x) as usize;
         match self.g.get(pos) {
@@ -61,26 +61,22 @@ impl Grid<'_> {
     }
 }
 
-
 fn main() {
-    let mut grid: Vec<char> = Vec::new();
-    let mut width: usize = 0;
-    let mut height: usize = 0;
-    for line in io::stdin().lines() {
-        let ll = line.unwrap();
-        let l = ll.trim_end();
-        width = l.len();
-        height += 1;
-        grid.extend(l.chars());
-    }
-
-    let gg = Grid {
-        g: &grid,
-        width: width,
-        height: height,
+    let grid = {
+        let mut gg = Grid {
+            g: Vec::new(),
+            width: 0,
+            height: 0,
+        };
+        for line in io::stdin().lines() {
+            let ll = line.unwrap();
+            let l = ll.trim_end();
+            gg.width = l.len();
+            gg.height += 1;
+            gg.g.extend(l.chars());
+        }
+        gg
     };
-
-    
 
     let mut score = 0;
 
@@ -88,9 +84,9 @@ fn main() {
     let mut start: usize = 0;
     let mut running = false;
 
-    for y in 0..gg.height {
-        for x in 0..gg.width {
-            let (valid, ch) = gg.get(y, x);
+    for y in 0..grid.height {
+        for x in 0..grid.width {
+            let (valid, ch) = grid.get(y, x);
             if !valid {
                 panic!("past grid bounds?")
             }
@@ -100,13 +96,13 @@ fn main() {
                     running = true;
                 }
             } else if running {
-                score += gg.terminate_number(y, start, x-1);
+                score += grid.terminate_number(y, start, x-1);
                 running = false;
             }
         }
 
         if running {
-            score += gg.terminate_number(y, start, width-1);
+            score += grid.terminate_number(y, start, grid.width-1);
             running = false;
         }
     }
