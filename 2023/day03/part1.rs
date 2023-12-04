@@ -3,8 +3,8 @@ use std::io;
 fn grid_get(grid: &Vec<char>, width: usize, y: usize, x: usize) -> (bool, char) {
     let pos = (y * width + x) as usize;
     match grid.get(pos) {
-        Some(c) => return (true, *c),
-        None => return (false, '!'),
+        Some(c) => (true, *c),
+        None => (false, '!'),
     }
 }
 
