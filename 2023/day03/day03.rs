@@ -64,9 +64,9 @@ impl Grid {
     }
 
     fn gear_score(&self) -> i32 {
-        self.gears.iter()
-            .filter(|(_k, v)| v.len() == 2)
-            .map(|(_k, v)| v[0] * v[1])
+        self.gears.values()
+            .filter(|v| v.len() == 2)
+            .map(|v| v[0] * v[1])
             .sum()
     }
 
