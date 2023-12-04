@@ -1,9 +1,11 @@
 use std::io;
+use std::collections::HashMap;
 
 struct Grid {
     g: Vec<char>,
     width: usize,
     height: usize,
+    gears: HashMap<(usize, usize), Vec<i32>>,
 }
 
 impl Grid {
@@ -15,9 +17,20 @@ impl Grid {
         }
     }
 
-    fn is_symbol(&self, y: usize, x: usize) -> bool {
+    fn get_symbol(&self, y: usize, x: usize) -> (bool, char) {
         let (valid, c) = self.get(y, x);
-        valid && !c.is_ascii_digit() && c != '.'
+        let is_sym = valid && !c.is_ascii_digit() && c != '.';
+        (is_sym, c)
+    }
+
+    fn is_symbol(&self, y: usize, x: usize) -> bool {
+        let (sym, _c) = self.get_symbol(y, x);
+        sym
+    }
+
+    fn is_gear(&self, y: usize, x: usize) -> bool {
+        let (valid, c) = self.get(y, x);
+        valid && c == '*'
     }
 
     fn near_symbol(&self, y: usize, start: usize, end: usize) -> bool {
@@ -42,7 +55,64 @@ impl Grid {
             self.is_symbol(y + 1, end + 1)
     }
 
-    fn terminate_number(&self, y: usize, start: usize, end: usize) -> i32 {
+    fn index_gear(&mut self, y: usize, x: usize, tally: i32) {
+        if let Some(v) = self.gears.get_mut(&(y, x)) {
+            v.push(tally);
+        } else {
+            self.gears.insert((y, x), vec![tally]);
+        }
+    }
+
+    fn gear_score(&self) -> i32 {
+        let mut score = 0;
+        for (_gear, tally) in &self.gears {
+            if tally.len() == 2 {
+                score += tally[0] * tally[1];
+            }
+        }
+        score
+    }
+
+    fn process_gears(&mut self, y: usize, start: usize, end: usize, tally: i32) {
+        /*
+        Similar to near_symbol, but looks at *all* neighboring cells without returning early.
+         */
+
+        for i in start..=end {
+            if y > 0 && self.is_gear(y - 1, i) {
+                self.index_gear(y-1, i, tally);
+            }
+            if self.is_gear(y + 1, i) {
+                self.index_gear(y+1, i, tally);
+            }
+        }
+    
+        // Scan columns left of the number.
+        if start > 0 {
+            if y > 0 && self.is_symbol(y - 1, start - 1) {
+                self.index_gear(y-1, start-1, tally);
+            }
+            if self.is_symbol(y, start - 1) {
+                self.index_gear(y, start-1, tally);
+            }
+            if self.is_symbol(y + 1, start - 1) {
+                self.index_gear(y+1, start-1, tally);
+            }
+        }
+
+        // and right.
+        if y > 0 && self.is_symbol(y - 1, end + 1) {
+            self.index_gear(y-1, end+1, tally);
+        }
+        if self.is_symbol(y, end + 1) {
+            self.index_gear(y, end+1, tally);
+        }
+        if self.is_symbol(y + 1, end + 1) {
+            self.index_gear(y+1, end+1, tally);
+        }
+    }
+
+    fn terminate_number(&mut self, y: usize, start: usize, end: usize) -> i32 {
         if !self.near_symbol(y, start, end) {
             return 0;
         }
@@ -57,16 +127,20 @@ impl Grid {
                 tally = tally * 10 + (cn as i32);
             }
         }
+
+        self.process_gears(y, start, end, tally);
+
         tally
     }
 }
 
 fn main() {
-    let grid = {
+    let mut grid = {
         let mut gg = Grid {
             g: Vec::new(),
             width: 0,
             height: 0,
+            gears: HashMap::new(),
         };
         for line in io::stdin().lines() {
             let ll = line.unwrap();
@@ -107,5 +181,18 @@ fn main() {
         }
     }
 
-    println!("{}", score)
+    println!("{}", score);
+
+
+    // part 2.
+    /*
+    Walk the grid as before, but every time we discover a number, scan for adjacent gears (*).
+    Every time we encounter a gear near a number, add to a mapping of
+        (gear_y, gear_x) -> [number_value, number_value]
+    Then, traverse the mapping and sum any products where there are exactly two numbers
+        next to the gear.
+     */
+
+    println!("{}", grid.gear_score());
+
 }
