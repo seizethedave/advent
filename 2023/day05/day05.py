@@ -14,6 +14,13 @@ class Map:
         else:
             return value
 
+def pairwise(it):
+    while True:
+        try:
+            yield (next(it), next(it))
+        except StopIteration:
+            break
+
 if __name__ == "__main__":
     maps = []
 
@@ -37,28 +44,12 @@ if __name__ == "__main__":
         for m in maps:
             spot = m.translate(spot)
         return spot
-        
-    locs = []
 
-    # Now go from seeds to location.
-    for s in seeds:
-        locs.append(seed_to_loc(s))
-
-    print(min(locs))
+    print(min(seed_to_loc(s) for s in seeds))
 
     # Part 2:
-
-    def pairwise(it):
-        while True:
-            try:
-                yield (next(it), next(it))
-            except StopIteration:
-                break
-        
-    range_seeds = list(pairwise(iter(seeds)))
-
     best = 9999999999999999999
-    for (start, stride) in range_seeds:
+    for (start, stride) in pairwise(iter(seeds)):
         best = min(
             best,
             min(seed_to_loc(i) for i in range(start, start+stride)))
