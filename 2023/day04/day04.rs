@@ -1,7 +1,8 @@
 use std::io;
 use std::collections::HashSet;
+use std::collections::VecDeque;
 
-fn game_score(s: &str) -> i64 {
+fn game_score(s: &str) -> (i64, i32) {
     let mut winners = HashSet::new();
     let mut mine = HashSet::new();
     let mut processing_winners = true;
@@ -19,24 +20,55 @@ fn game_score(s: &str) -> i64 {
 
     let count = mine.intersection(&winners).collect::<HashSet<_>>().len();
     if count == 0 {
-        0
+        (0, 0)
     } else {
-        i64::pow(2, count as u32 - 1)
+        (i64::pow(2, count as u32 - 1), count as i32)
     }
 }
 
 fn main() {
-    let mut score :i64 = 0;
-    for line in io::stdin().lines() {
+    let mut score: i64 = 0;
+    let mut cards: i64 = 0;
+    let mut agenda = VecDeque::new();
+
+    for (_i, line) in io::stdin().lines().enumerate() {
         let mut l = line.unwrap();
         let pos = match l.find(":") {
             None => return,
             Some(n) => n,
         };
+
+        /*
+        1
+        2
+        3
+        4
+
+        []
+        
+        */
+
         // Skip the colon and the following space.
         l = l[pos+2..].to_string();
-        score += game_score(&l);
+        let (sc, bonus_games) = game_score(&l);
+
+        let mul = 1 + match agenda.pop_front() {
+            Some(m) => m,
+            _ => 0,
+        };
+
+        cards += mul;
+        score += sc;
+
+        for bonus in 0..bonus_games {
+            if let Some(v) = agenda.get_mut(bonus as usize) {
+                *v += mul;
+            } else {
+                agenda.push_back(mul);
+            }
+        }
     }
 
     println!("{}", score);
+    println!("{}", cards);
 }
