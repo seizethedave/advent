@@ -32,12 +32,36 @@ if __name__ == "__main__":
             dest, src, length = [int(v) for v in line.split(" ")]
             thismap.add_range(dest, src, length)
 
-    locs = []
-    # Now go from seeds to location.
-    for s in seeds:
+    def seed_to_loc(s):
         spot = s
         for m in maps:
             spot = m.translate(spot)
-        locs.append(spot)
+        return spot
+        
+    locs = []
+
+    # Now go from seeds to location.
+    for s in seeds:
+        locs.append(seed_to_loc(s))
 
     print(min(locs))
+
+    # Part 2:
+
+    def pairwise(it):
+        while True:
+            try:
+                yield (next(it), next(it))
+            except StopIteration:
+                break
+        
+    range_seeds = list(pairwise(iter(seeds)))
+
+    best = 9999999999999999999
+    for (start, stride) in range_seeds:
+        best = min(
+            best,
+            min(seed_to_loc(i) for i in range(start, start+stride)))
+        print("so far: {}".format(best))
+
+    print(best)
