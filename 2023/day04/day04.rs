@@ -31,22 +31,12 @@ fn main() {
     let mut cards: i64 = 0;
     let mut agenda = VecDeque::new();
 
-    for (_i, line) in io::stdin().lines().enumerate() {
+    for line in io::stdin().lines() {
         let mut l = line.unwrap();
         let pos = match l.find(":") {
             None => return,
             Some(n) => n,
         };
-
-        /*
-        1
-        2
-        3
-        4
-
-        []
-        
-        */
 
         // Skip the colon and the following space.
         l = l[pos+2..].to_string();
@@ -57,8 +47,11 @@ fn main() {
             _ => 0,
         };
 
-        cards += mul;
         score += sc;
+        cards += mul;
+
+        // Maintain a queue of upcoming bonuses. Whatever bonus this last card
+        // earned gets boosted by that card's multiplier.
 
         for bonus in 0..bonus_games {
             if let Some(v) = agenda.get_mut(bonus as usize) {
