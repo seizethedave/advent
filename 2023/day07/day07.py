@@ -1,5 +1,5 @@
 import sys
-from collections import defaultdict
+from collections import Counter
 
 HighCard = 1
 OnePair = 2
@@ -33,16 +33,14 @@ def hand_from_counts(counts):
     return HighCard
 
 def calc_hand_type_part_1(h: str) -> int:
-    norm = defaultdict(int)
-    for c in h:
-        norm[c] += 1
+    norm = Counter(h)
     counts = sorted(list(norm.values()), reverse=True)
     return hand_from_counts(counts)
 
 def calc_hand_type_part_2(h: str) -> int:
     if h == [Joker] * 5:
         return FiveOfKind
-    norm = defaultdict(int)
+    norm = Counter()
     jokers = 0
     for c in h:
         if c == Joker:
