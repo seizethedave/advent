@@ -54,15 +54,13 @@ def calc_hand_type_part_2(h: str) -> int:
     return hand_from_counts(counts)
 
 if __name__ == "__main__":
-
     input_lines = []
-    
     for line in sys.stdin:
         hand, score = line.split()
         input_lines.append((hand, score))
 
     hands = []
-    for (hand, score) in input_lines:    
+    for (hand, score) in input_lines:
         numeric_hand = hand_to_numeric(hand, Part1ValMap)
         hand_type = calc_hand_type_part_1(numeric_hand)
         hands.append((hand_type, numeric_hand, int(score)))
@@ -77,7 +75,7 @@ if __name__ == "__main__":
     # part 2:
 
     hands = []
-    for (hand, score) in input_lines:    
+    for (hand, score) in input_lines:
         numeric_hand = hand_to_numeric(hand, Part2ValMap)
         hand_type = calc_hand_type_part_2(numeric_hand)
         hands.append((hand_type, numeric_hand, int(score)))
