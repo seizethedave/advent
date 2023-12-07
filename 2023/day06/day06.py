@@ -10,8 +10,6 @@ def count_solutions(time, distance):
 
 if __name__ == "__main__":
     tl, dl = list(sys.stdin)
-    tl = tl.strip()
-    dl = dl.strip()
     times = [int(v) for v in tl.split()[1:]]
     distances = [int(v) for v in dl.split()[1:]]
     spec = zip(times, distances)
