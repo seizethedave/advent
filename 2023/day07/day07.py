@@ -43,12 +43,15 @@ def calc_hand_type_part_2(h: str) -> int:
     if h == [Joker] * 5:
         return FiveOfKind
     norm = defaultdict(int)
+    jokers = 0
     for c in h:
-        if c != Joker:
+        if c == Joker:
+            jokers += 1
+        else:
             norm[c] += 1
     counts = sorted(list(norm.values()), reverse=True)
-    jokers = sum(1 if c == Joker else 0 for c in h)
-    # Boost the number of highest 
+    # Whatever is in counts[0] will contribute the most to the hand.
+    # Our jokers will make the most impact by duplicating that card.
     counts[0] += jokers
     return hand_from_counts(counts)
 
