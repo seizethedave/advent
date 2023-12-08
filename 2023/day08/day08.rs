@@ -38,11 +38,7 @@ fn main() {
         let opts = nodes.get(pos).expect("node not found!");
         pos = {
             let (l, r) = opts;
-            if dir == 'L' {
-                l
-            } else {
-                r
-            }
+            if dir == 'L' { l } else { r }
         };
 
         if pos == DEST {
