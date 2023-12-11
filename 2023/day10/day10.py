@@ -26,10 +26,10 @@ Turns = {
     PipeEW: [(E, E), (W, W)],
 }
 
-PipesNorth = {PipeNE, PipeNW, PipeNS}
-PipesSouth = {PipeSE, PipeNS, PipeSW}
-PipesEast = {PipeNE, PipeSE, PipeEW}
-PipesWest = {PipeNW, PipeSW, PipeEW}
+PipesNorth = {k for k, v in Turns.items() if any(d == N for (_, d) in v)}
+PipesSouth = {k for k, v in Turns.items() if any(d == S for (_, d) in v)}
+PipesEast = {k for k, v in Turns.items() if any(d == E for (_, d) in v)}
+PipesWest = {k for k, v in Turns.items() if any(d == W for (_, d) in v)}
 
 def grid_get(grid, y, x):
     try:
@@ -128,6 +128,7 @@ if __name__ == "__main__":
         s = PipeNS
     elif sd == {E, W}:
         s = PipeEW
+
     cleaned_grid = []
     for y, row in enumerate(grid):
         clean_row = ''
