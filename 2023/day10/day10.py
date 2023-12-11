@@ -7,6 +7,7 @@ PipeSE = 'F'
 PipeSW = '7'
 PipeNS = '|'
 PipeEW = '-'
+Ground = '.'
 
 N = (-1, 0)
 E = (0, 1)
@@ -58,6 +59,20 @@ class Cursor:
     def pos(self):
         return (self.y, self.x)
 
+def count_contained(grid) -> int:
+    # Scan every row L -> R. If we encounter a pipe that extends north, consider
+    # that a pipe crossing. Count the ground spots as inside if we've done an
+    # odd number of crossings.
+    inside = 0
+    for row in grid:
+        crossed = 0
+        for col in row:
+            if col in PipesNorth:
+                crossed += 1
+            elif col == Ground:
+                inside += crossed % 2
+    return inside
+
 if __name__ == "__main__":
     grid = []
     startY = None
@@ -72,13 +87,13 @@ if __name__ == "__main__":
     dirs = []
 
     if grid_get(grid, startY-1, startX) in PipesSouth:
-        dirs.append((-1, 0))
+        dirs.append(N)
     if grid_get(grid, startY, startX+1) in PipesWest:
-        dirs.append((0, 1))
+        dirs.append(E)
     if grid_get(grid, startY, startX-1) in PipesEast:
-        dirs.append((0, -1))
+        dirs.append(W)
     if grid_get(grid, startY+1, startX) in PipesNorth:
-        dirs.append((1, 0))
+        dirs.append(S)
 
     (dy1, dx1), (dy2, dx2) = dirs
     cursor1 = Cursor(grid, startY, startX, dy1, dx1)
@@ -94,6 +109,33 @@ if __name__ == "__main__":
         steps += 1
         visited.add(cursor1.pos)
         visited.add(cursor2.pos)
-        print("{} {}".format(cursor1.pos, cursor2.pos))
 
     print(steps)
+
+    # Part 2. Figure out what S was, then make a cleaned grid where all
+    # the "junk" pipes are replaced with ground characters.
+
+    sd = set(dirs)
+    if sd == {N, E}:
+        s = PipeNE
+    elif sd == {N, W}:
+        s = PipeNW
+    elif sd == {S, E}:
+        s = PipeSE
+    elif sd == {S, W}:
+        s = PipeSW
+    elif sd == {N, S}:
+        s = PipeNS
+    elif sd == {E, W}:
+        s = PipeEW
+    cleaned_grid = []
+    for y, row in enumerate(grid):
+        clean_row = ''
+        for x, char in enumerate(row):
+            if char == Start:
+                clean_row += s
+            else:
+                clean_row += char if (y, x) in visited else Ground
+        cleaned_grid.append(clean_row)
+
+    print(count_contained(cleaned_grid))
