@@ -17,9 +17,9 @@ def count_arrangements(springs: str, spec, terminal=False):
     spec_empty = len(spec) == 0
 
     if springs_empty:
-        return 1 if spec_empty else 0
+        return 0 if not spec_empty else 1
     if spec_empty:
-        return 0 if (Damaged in springs) else 1
+        return 0 if Damaged in springs else 1
 
     def skip():
         return count_arrangements(springs[1:], spec, False)
@@ -42,22 +42,14 @@ def count_arrangements(springs: str, spec, terminal=False):
         return skip() + consume()
     elif springs.startswith(Damaged):
         return consume()
-    
-def embiggen_spec(spec):
-    bigspec = []
-    for _ in range(5):
-        bigspec.extend(spec)
-    return tuple(bigspec)
 
 if __name__ == "__main__":
     specs = list(iter_specs())
 
-    #for s, spec in specs:
-    #    print(s, spec, count_arrangements(s, spec, 0))
     print(sum(count_arrangements(s, spec) for s, spec in specs))
 
     big_specs = [
-        ("?".join([s] * 5), embiggen_spec(spec))
+        (Unknown.join([s] * 5), spec * 5)
         for s, spec in specs
     ]
 
