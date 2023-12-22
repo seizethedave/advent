@@ -15,17 +15,22 @@ def poly_list_push(listref: list, i: int, val: int):
         total = 0
     listref[i] = (total << 1) + val
 
-def find_reflection(listref: list):
+def find_reflection(listref: list, delta_bits: int):
     """
     This is an O(N^2) list reflection scan. I believe there's another O(N)
-    implementation of this that constructs a unique polynomial. But I lost steam
-    on that train of thought.
+    implementation of this that iteratively constructs unique polynomials, but I
+    lost steam on that train of thought.
+
+    Since each number in the list is a base-2 polynomial, we can use the bit
+    count of the difference between two of them to determine how many original
+    grid squares were different.
+    (n bits different ==> n squares were different.)
     """
     for i in range(1, len(listref)):
         w = min(i, len(listref) - i)
         l = listref[i-w:i]
         r = listref[i:i+w]
-        if l == r[::-1]:
+        if sum(abs(a-b).bit_count() for a, b in zip(l, r[::-1])) == delta_bits:
             return i
     return 0
 
@@ -33,15 +38,12 @@ class Grid:
     def __init__(self):
         self.row_poly = []
         self.col_poly = []
-
-    def find_reflect_row(self):
-        return find_reflection(self.row_poly)
-
-    def find_reflect_col(self):
-        return find_reflection(self.col_poly)
     
-    def reflect_score(self):
-        return 100 * self.find_reflect_row() + self.find_reflect_col()
+    def reflect_score(self, delta_bits):
+        return (
+            find_reflection(self.row_poly, delta_bits) * 100 +
+            find_reflection(self.col_poly, delta_bits)
+        )
     
     def poly_push_row(self, i: int, val: int):
         poly_list_push(self.row_poly, i, val)
@@ -71,4 +73,9 @@ if __name__ == "__main__":
 
         gy += 1
 
-    print(sum(g.reflect_score() for g in grids))
+    #for i, g in enumerate(grids):
+    #    print(i, g.reflect_score(0), g.reflect_score(1))
+
+    print("%%%%%%")
+    print(sum(g.reflect_score(0) for g in grids))
+    print(sum(g.reflect_score(1) for g in grids))
