@@ -17,10 +17,6 @@ def poly_list_push(listref: list, i: int, val: int):
 
 def find_reflection(listref: list, delta_bits: int):
     """
-    This is an O(N^2) list reflection scan. I believe there's another O(N)
-    implementation of this that iteratively constructs unique polynomials, but I
-    lost steam on that train of thought.
-
     Since each number in the list is a base-2 polynomial, we can use the bit
     count of the bit difference (xor) between two of them to determine how many
     original grid squares were different.
