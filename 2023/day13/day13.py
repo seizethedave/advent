@@ -62,7 +62,7 @@ if __name__ == "__main__":
             gy = 0
             continue
 
-        for x, c in enumerate(row.rstrip()):
+        for x, c in enumerate(row):
             val = int(c == Rock)
             g.poly_push_row(gy, val)
             g.poly_push_col(x, val)
