@@ -22,15 +22,15 @@ def find_reflection(listref: list, delta_bits: int):
     lost steam on that train of thought.
 
     Since each number in the list is a base-2 polynomial, we can use the bit
-    count of the difference between two of them to determine how many original
-    grid squares were different.
+    count of the bit difference (xor) between two of them to determine how many
+    original grid squares were different.
     (n bits different ==> n squares were different.)
     """
     for i in range(1, len(listref)):
         w = min(i, len(listref) - i)
         l = listref[i-w:i]
         r = listref[i:i+w]
-        if sum(abs(a-b).bit_count() for a, b in zip(l, r[::-1])) == delta_bits:
+        if sum((a^b).bit_count() for a, b in zip(l, r[::-1])) == delta_bits:
             return i
     return 0
 
@@ -73,9 +73,5 @@ if __name__ == "__main__":
 
         gy += 1
 
-    #for i, g in enumerate(grids):
-    #    print(i, g.reflect_score(0), g.reflect_score(1))
-
-    print("%%%%%%")
     print(sum(g.reflect_score(0) for g in grids))
     print(sum(g.reflect_score(1) for g in grids))
