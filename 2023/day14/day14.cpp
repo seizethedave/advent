@@ -9,10 +9,39 @@ enum Item {
     Cube,
 };
 
+enum Dir {
+    North,
+    West,
+    South,
+    East,
+};
+
 class grid {
 public:
     std::vector<Item> items;
     size_t width;
+    Dir dir = North;
+
+    void rotate() {
+        switch (this->dir) {
+            case North:
+            this->dir = West;
+            break;
+            case West:
+            this->dir = South;
+            break;
+            case South:
+            this->dir = East;
+            break;
+            case East:
+            this->dir = North;
+            break;
+        }
+    }
+
+    size_t height() const {
+        return this->items.size() / this->width;
+    }
 
     void reserve(size_t s) {
         this->items.reserve(s);
@@ -25,15 +54,79 @@ public:
         this->items[y * this->width + x] = item;
     }
 
+    void print() {
+        // Always print pointing north.
+        Dir tmp = this->dir;
+        this->dir = North;
+
+        std::cout << "D: " << this->dir << std::endl;
+        for (int y = 0; y < this->height(); y++) {
+            for (int x = 0; x < this->width; x++) {
+                Item val = this->get(y, x);
+                if (val == Rock) {
+                    std::cout << "O";
+                } else if (val == Empty) {
+                    std::cout << ".";
+                } else if (val == Cube) {
+                    std::cout << "#";
+                }
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+
+        this->dir = tmp;
+    }
+
     Item& get(int y, int x) {
-        return this->items.at(y * this->width + x);
+        /*
+         v
+         v
+        O....#....
+        O.OO#....#
+        .....##...
+        Oo.#O....O <<
+        .O.....O#.
+        O.#..O.#.#
+        ..O..#O..O
+        .......O..
+        #....###..
+        #OO..#....
+
+        w=10
+        h=10
+        N 3, 1
+        E 8, 3
+        W 1, 6
+        S 6, 8
+        */
+        int h = this->height();
+        int w = this->width;
+
+        switch (this->dir) {
+            case North:
+            break;
+            case East:
+            std::swap(y, x);
+            x = w - x - 1;
+            break;
+            case South:
+            y = h - y - 1;
+            x = w - x - 1;
+            break;
+            case West:
+            std::swap(y, x);
+            y = h - y - 1;
+            break;
+        }
+
+        return this->items.at(y * w + x);
     }
 
     int findMoveRow(int y, int x) {
         int best = y;
         for (int yy = y - 1; yy >= 0; yy--) {
-            Item val = this->get(yy, x);
-            if (val == Empty) {
+            if (this->get(yy, x) == Empty) {
                 best = yy;
             } else {
                 break;
@@ -43,43 +136,46 @@ public:
     }
 
     void dragRocks() {
-        int y = 0;
-        int x = 0;
-        int rows = this->items.size() / this->width;
-
-        for (auto& val : this->items) {
-            if (x == this->width) {
-                y++;
-                x = 0;
-            }
-            if (val == Rock) {
-                int moveRow = this->findMoveRow(y, x);
-                if (moveRow != y) {
-                    std::swap(this->get(y, x), this->get(moveRow, x));
+        for (int y = 0; y < this->height(); y++) {
+            for (int x = 0; x < this->width; x++) {
+                if (this->get(y, x) == Rock) {
+                    int moveRow = this->findMoveRow(y, x);
+                    if (moveRow != y) {
+                        std::swap(this->get(y, x), this->get(moveRow, x));
+                    }
                 }
             }
-            x++;
         }
     }
 
-    int score() const {
-        int total = 0;
+    void cycle() {
+        for (int i = 0; i < 4; i++) {
+            this->dragRocks();
+            this->rotate();
+        }
+    }
+
+    int load() {
+        // Always calculate pointing north.
+        Dir tmp = this->dir;
+        this->dir = North;
+
+        int score = 0;
         int y = 0;
         int x = 0;
-        int rows = this->items.size() / this->width;
+        int rows = this->height();
 
-        for (auto& val : this->items) {
-            if (x == this->width) {
-                y++;
-                x = 0;
+        for (int y = 0; y < this->height(); y++) {
+            for (int x = 0; x < this->width; x++) {
+                if (this->get(y, x) == Rock) {
+                    score += rows - y;
+                }
             }
-            if (val == Rock) {
-                total += rows - y;
-            }
-            x++;
         }
 
-        return total;
+        this->dir = tmp;
+
+        return score;
     }
 };
 
@@ -101,7 +197,7 @@ int main() {
     for (std::string& l : lines) {
         int x = 0;
 
-        for (char& c : l) {
+        for (char c : l) {
             Item val;
             switch (c) {
             case '.':
@@ -122,7 +218,17 @@ int main() {
         y++;
     }
 
-    g.dragRocks();
+    g.print();
+    int64_t lim = 1000000000;
 
-    std::cout << g.score() << std::endl;
+    for (int64_t i = 0; i < lim; i++) {
+        g.cycle();
+
+        if (i % 10000 == 0) [[unlikely]] {
+            std::cout << "rrr" << i << std::endl;
+            std::cout << g.load() << std::endl;
+        }
+    } 
+
+    std::cout << g.load() << std::endl;
 }
