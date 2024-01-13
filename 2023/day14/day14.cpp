@@ -52,6 +52,30 @@ public:
         }
     }
 
+    Item& get(int y, int x) {
+        int h = this->height();
+        int w = this->width;
+
+        switch (this->dir) {
+            case North:
+            break;
+            case East:
+            std::swap(y, x);
+            x = w - x - 1;
+            break;
+            case South:
+            y = h - y - 1;
+            x = w - x - 1;
+            break;
+            case West:
+            std::swap(y, x);
+            y = h - y - 1;
+            break;
+        }
+
+        return this->items.at(y * w + x);
+    }
+
     void set(int y, int x, Item item) {
         this->items[y * this->width + x] = item;
     }
@@ -78,51 +102,6 @@ public:
         std::cout << std::endl;
 
         this->dir = tmp;
-    }
-
-    Item& get(int y, int x) {
-        /*
-         v
-         v
-        O....#....
-        O.OO#....#
-        .....##...
-        Oo.#O....O <<
-        .O.....O#.
-        O.#..O.#.#
-        ..O..#O..O
-        .......O..
-        #....###..
-        #OO..#....
-
-        w=10
-        h=10
-        N 3, 1
-        E 8, 3
-        W 1, 6
-        S 6, 8
-        */
-        int h = this->height();
-        int w = this->width;
-
-        switch (this->dir) {
-            case North:
-            break;
-            case East:
-            std::swap(y, x);
-            x = w - x - 1;
-            break;
-            case South:
-            y = h - y - 1;
-            x = w - x - 1;
-            break;
-            case West:
-            std::swap(y, x);
-            y = h - y - 1;
-            break;
-        }
-
-        return this->items.at(y * w + x);
     }
 
     int findMoveRow(int y, int x) {
@@ -179,7 +158,7 @@ public:
         return score;
     }
 
-    std::string fingerprint() {
+    std::string fingerprint() const {
         std::string val(this->items.size(), '0');
         size_t i = 0;
         for (auto c : this->items) {
@@ -188,7 +167,7 @@ public:
             }
             i++;
         }
-        return std::move(val);
+        return val;
     }
 };
 
