@@ -1,5 +1,7 @@
 #include <iostream>
 #include <vector>
+#include <unordered_map>
+#include <string>
 
 // Build: g++ day14.cpp -std=c++20
 
@@ -165,7 +167,7 @@ public:
         int x = 0;
         int rows = this->height();
 
-        for (int y = 0; y < this->height(); y++) {
+        for (int y = 0; y < rows; y++) {
             for (int x = 0; x < this->width; x++) {
                 if (this->get(y, x) == Rock) {
                     score += rows - y;
@@ -174,8 +176,19 @@ public:
         }
 
         this->dir = tmp;
-
         return score;
+    }
+
+    std::string fingerprint() {
+        std::string val(this->items.size(), '0');
+        size_t i = 0;
+        for (auto c : this->items) {
+            if (c == Rock) {
+                val[i] = '1';
+            }
+            i++;
+        }
+        return std::move(val);
     }
 };
 
@@ -218,17 +231,31 @@ int main() {
         y++;
     }
 
-    g.print();
-    int64_t lim = 1000000000;
+    // g.dragRocks();
+    // std::cout << "Part 1: " << g.load() << std::endl;
+    // return 0;
+
+    const int64_t lim = 1000000000;
+
+    std::vector<int64_t> history;
+    std::unordered_map<std::string, size_t> seen;
 
     for (int64_t i = 0; i < lim; i++) {
         g.cycle();
+        int val = g.load();
+        auto print = g.fingerprint();
+        auto found = seen.find(print);
+        if (found != seen.end()) {
+            // Found a cycle.
+            int64_t cycleLen = i - found->second;
+            size_t cycleBegin = found->second;
+            int64_t ultimateValue = history[cycleBegin + ((lim - cycleBegin) % cycleLen) - 1];
 
-        if (i % 10000 == 0) [[unlikely]] {
-            std::cout << "rrr" << i << std::endl;
-            std::cout << g.load() << std::endl;
+            std::cout << "Part 2: " << ultimateValue << std::endl;
+            break;
         }
-    } 
 
-    std::cout << g.load() << std::endl;
+        history.push_back(val);
+        seen[print] = i;
+    }
 }
