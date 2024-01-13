@@ -7,10 +7,6 @@ def do_hash(s):
     return h
 
 if __name__ == "__main__":
-    total = 0
-    for line in sys.stdin:
-        line = line.rstrip()
-        for atom in line.split(","):
-            total += do_hash(atom)
-    print(total)
-            
+    print(
+        sum(do_hash(atom) for line in sys.stdin for atom in line.split(","))
+    )
