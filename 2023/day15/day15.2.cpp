@@ -1,6 +1,6 @@
 #include <iostream>
 #include <list>
-#include <vector>
+#include <array>
 #include <unordered_map>
 #include <string>
 #include <numeric>
@@ -36,20 +36,19 @@ public:
             auto lensIt = it->second;
             *lensIt = focalLength;
         } else {
-            // Just add to front.
+            // Just add to front. (Which is "back" in the puzzle problem language.)
             this->lenses.push_front(focalLength);
             this->labelIndex.insert(std::make_pair(label, this->lenses.begin()));
         }
     }
 
     long score() const {
-        int boxPower = 1 + this->boxNum;
         int slot = 1;
-        int sum = 0;
+        long sum = 0;
 
         for (auto it = this->lenses.crbegin(); it != this->lenses.crend(); ++it) {
             auto v = *it;
-            sum += boxPower * slot * v;
+            sum += (this->boxNum + 1) * slot * v;
             slot++;
         }
 
@@ -58,13 +57,13 @@ public:
 };
 
 int main() {
-    std::string item;
-
-    Box boxes[BOXCOUNT];
+    std::array<Box, BOXCOUNT> boxes;
     int boxNum = 0;
     for (Box &b : boxes) {
         b.boxNum = boxNum++;
     }
+
+    std::string item;
 
     while (std::getline(std::cin, item, ',')) {
         size_t pos;
@@ -81,13 +80,11 @@ int main() {
         }
     }
 
-    long s = 0;
-
-    for (Box &b : boxes) {
-        s += b.score();
-    }
-
-    std::cout << s << std::endl;
+    long score = std::accumulate(boxes.cbegin(), boxes.cend(), 0,
+        [](long total, const Box& b) {
+            return total + b.score();
+        });
+    std::cout << score << std::endl;
 
     return 0;
 }
