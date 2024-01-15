@@ -29,10 +29,11 @@ class Grid:
             nbeams = []
             for b in beams:
                 for bb in b.move():
-                    if (bb.y, bb.x, bb.dy, bb.dx) not in history:
+                    posdir = (bb.y, bb.x, bb.dy, bb.dx)
+                    if posdir not in history:
                         nbeams.append(bb)
                         visited.add((bb.y, bb.x))
-                        history.add((bb.y, bb.x, bb.dy, bb.dx))
+                        history.add(posdir)
             beams = nbeams
         return len(visited)
 
