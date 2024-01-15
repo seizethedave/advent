@@ -17,15 +17,14 @@ class Grid:
             raise IndexError("out of bounds")
         return self.arr[y * self.width + x]
     
-    def search(self):
+    def search(self, entry_beam):
+        # Initially we have one beam. In each iteration march each beam forward
+        # and compute a new series of beams based on what those produce. Avoid
+        # re-entering the same places with the same directions as they'll just
+        # result in loops.
         visited = set()
         history = set()
-        # Initially we have one beam that is right-facing about to enter the
-        # top left corner. In each iteration march each beam forward and compute
-        # a new series of beams based on what those produce.
-        # Avoid re-entering the same places with the same directions as they'll
-        # just result in revisiting the same paths.
-        beams = [Beam(self, 0, 1, 0, -1)]
+        beams = [entry_beam]
         while beams:
             nbeams = []
             for b in beams:
@@ -75,6 +74,14 @@ class Beam:
             self.dy, self.dx = self.dx, self.dy
             return [self]
 
+def all_entry_beams(grid):
+    for y in range(grid.height):
+        yield Beam(grid, 0, 1, y, -1)
+        yield Beam(grid, 0, -1, y, grid.width)
+    for x in range(grid.width):
+        yield Beam(grid, 1, 0, -1, x)
+        yield Beam(grid, -1, 0, grid.height, x)
+
 if __name__ == "__main__":
     width = 0
     arr = []
@@ -84,4 +91,9 @@ if __name__ == "__main__":
         arr.extend(line)
 
     grid = Grid(arr, width)
-    print(grid.search())
+
+    # Part 1:
+    print(grid.search(Beam(grid, 0, 1, 0, -1)))
+
+    # Part 2:
+    print(max(grid.search(b) for b in all_entry_beams(grid)))
