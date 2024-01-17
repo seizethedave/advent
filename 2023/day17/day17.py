@@ -1,6 +1,5 @@
 import sys
 import heapq
-from itertools import pairwise
 
 MAX_FORWARD = 3
 
@@ -33,10 +32,10 @@ def search(grid, startY, startX, endY, endX):
         return int(grid[yy][xx])
 
     visited = set()
-    fringe = [(0, (startY, startX), [(startY, startX)], (0, 0), 0)]
+    fringe = [(0, (startY, startX), (0, 0), 0)]
 
     while fringe:
-        (heat, (vy, vx), path, last_move, remaining) = heapq.heappop(fringe)
+        (heat, (vy, vx), last_move, remaining) = heapq.heappop(fringe)
         if vy == endY and vx == endX:
             return heat
         if (vy, vx, last_move, remaining) in visited:
@@ -50,7 +49,7 @@ def search(grid, startY, startX, endY, endX):
                 nheat = get(ny, nx)
             except IndexError:
                 continue
-            heapq.heappush(fringe, (heat + nheat, (ny, nx), path + [(ny, nx)], (dy, dx), nrem))
+            heapq.heappush(fringe, (heat + nheat, (ny, nx), (dy, dx), nrem))
 
 if __name__ == "__main__":
     grid = [line.rstrip() for line in sys.stdin]
