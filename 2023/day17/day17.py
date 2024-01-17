@@ -13,28 +13,29 @@ def next_moves(last_move, y, x, endY, endX, remaining, forward_min_max):
     strides = max_forward - remaining
     backward = tuple(-v for v in last_move)
 
-    def gen_moves():
-        for m in DIR_CHAR.keys():
-            dy, dx = m
-            if m == last_move:
-                if remaining > 0:
-                    yield (dy, dx, remaining - 1)
-            elif m == backward:
-                # Can't back up.
-                pass
-            elif strides >= min_forward:
-                # Turning. By emitting this move we've used up one of the
-                # MAX_FORWARD movements.
-                yield (dy, dx, max_forward - 1)
+    def allowed(dy, dx, rem):
+        """
+        Only allow moves to the target space that satisfy the min_forward moves
+        requirement.
+        """
+        return (
+            (y + dy != endY or x + dx != endX)
+            or max_forward - rem >= min_forward
+        )
 
-    # Suppress moves that would reach the target square without meeting
-    # min_forward movements.
-    for (ddy, ddx, drem) in gen_moves():
-        if (y + ddy, x + ddx) == (endY, endX):
-            if max_forward - drem >= min_forward:
-                yield (ddy, ddx, drem)
-        else:
-            yield (ddy, ddx, drem)
+    for m in DIR_CHAR.keys():
+        dy, dx = m
+        if m == last_move:
+            if remaining > 0 and allowed(dy, dx, remaining - 1):
+                yield (dy, dx, remaining - 1)
+        elif m == backward:
+            # Can't back up.
+            pass
+        elif strides >= min_forward:
+            # Turning. By emitting this move we've used up one of the
+            # MAX_FORWARD movements.
+            if allowed(dy, dx, max_forward - 1):
+                yield (dy, dx, max_forward - 1)
 
 def dist(y1: int, x1: int, y2: int, x2: int) -> int:
     return abs(y2 - y1) + abs(x2 - x1)
