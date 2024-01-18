@@ -2,3 +2,6 @@ input.txt
 sample*.txt
 .vscode/
 target/
+.DS_Store
+a.out
+a.out.dSYM/
