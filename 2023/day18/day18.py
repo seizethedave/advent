@@ -45,8 +45,6 @@ def shoelace_trapezoid_area(vertices):
 if __name__ == "__main__":
     inputs = list(iter_input())
 
-    pts, path_len = points(inputs, decoder=decode_triple)
-    print(shoelace_trapezoid_area(pts) + path_len // 2 + 1)
-
-    pts, path_len = points(inputs, decoder=decode_triple_hex)
-    print(shoelace_trapezoid_area(pts) + path_len // 2 + 1)
+    for d in [decode_triple, decode_triple_hex]:
+        pts, path_len = points(inputs, decoder=d)
+        print(shoelace_trapezoid_area(pts) + path_len // 2 + 1)
