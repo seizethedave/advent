@@ -22,9 +22,6 @@ class Workflow(NamedTuple):
     name: str
     rules: List[Rule]
 
-class Rating(NamedTuple):
-    vals: Dict[str, int]
-
 def read_workflow(s: str) -> Workflow:
     rules_begin = s.index("{")
     name = s[:rules_begin]
@@ -44,20 +41,20 @@ def read_workflow(s: str) -> Workflow:
 
     return Workflow(name, rules)
 
-def read_rating(s: str) -> Rating:
+def read_registers(s: str) -> Dict[str, int]:
     vals = {}
     for item in s.strip("{}").split(","):
         k, v = item.split("=")
         vals[k] = int(v)
-    return Rating(vals)
+    return vals
 
-def eval_rating(r: Rating, workflows: Dict[str, Workflow]) -> bool:
+def eval_rating(registers: Dict[str, int], workflows: Dict[str, Workflow]) -> bool:
     w = workflows[START_WORKFLOW]
     while True:
         # Find the action for the first matching rule in this workflow.
         for rule in w.rules:
             if rule.lhs_field is not None:
-                if rule.op(r.vals[rule.lhs_field], rule.rhs_val):
+                if rule.op(registers[rule.lhs_field], rule.rhs_val):
                     action = rule.action
                     break
             else:
@@ -176,7 +173,7 @@ class Tests(unittest.TestCase):
 if __name__ == "__main__":
     reading_workflows = True
     workflows: Dict[str, Workflow] = {}
-    ratings: List[Rating] = []
+    registers: List[Dict[str, int]] = []
 
     for line in sys.stdin:
         line = line.rstrip()
@@ -188,12 +185,12 @@ if __name__ == "__main__":
             w = read_workflow(line)
             workflows[w.name] = w
         else:
-            ratings.append(read_rating(line))
+            registers.append(read_registers(line))
 
     print(
         sum(
-            sum(r.vals.values()) if eval_rating(r, workflows) else 0
-            for r in ratings
+            sum(r.values()) if eval_rating(r, workflows) else 0
+            for r in registers
         )
     )
 
