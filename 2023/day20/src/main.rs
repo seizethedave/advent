@@ -1,5 +1,6 @@
 use std::io;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::collections::VecDeque;
 
 /*
@@ -19,11 +20,13 @@ const MODULE_BUTTON: &str = "button";
 const MODULE_BROADCAST: &str = "broadcaster";
 
 struct FlipFlopModule {
+    on: bool,
     neighbors: Vec<String>,
 }
 
 struct ConjunctionModule {
     neighbors: Vec<String>,
+    neighbor_high_pulse: HashSet<String>,
 }
 
 struct BroadcastModule {
@@ -31,22 +34,47 @@ struct BroadcastModule {
 }
 
 pub trait CallableModule {
-    fn call(&mut self);
+    fn call(&mut self, sender: String, high_pulse: bool) -> Vec<(String, bool)>;
 }
 
 impl CallableModule for FlipFlopModule {
-    fn call(&mut self) {
-        println!("call::flipflop")
+    fn call(&mut self, sender: String, high_pulse: bool) -> Vec<(String, bool)> {
+        let mut res = Vec::new();
+        if !high_pulse {
+            self.on = !self.on;
+            for n in &self.neighbors {
+                res.push((n.to_string(), self.on));
+            }
+        }
+        res
     }
 }
+
 impl CallableModule for ConjunctionModule {
-    fn call(&mut self) {
-        println!("call::conjunction")
+    fn call(&mut self, sender: String, high_pulse: bool) -> Vec<(String, bool)> {
+        if high_pulse {
+            self.neighbor_high_pulse.insert(sender);
+        } else {
+            self.neighbor_high_pulse.remove(&sender);
+        }
+        let pulse = !(self.neighbor_high_pulse.len() == self.neighbors.len());
+        let mut res = Vec::new();
+        for n in &self.neighbors {
+            res.push((n.to_string(), pulse));
+        }
+        println!("call::conjunction");
+        res
     }
 }
+
 impl CallableModule for BroadcastModule {
-    fn call(&mut self) {
-        println!("call::broadcast")
+    fn call(&mut self, sender: String, high_pulse: bool) -> Vec<(String, bool)> {
+        println!("call::broadcast");
+        let mut res = Vec::new();
+        for n in &self.neighbors {
+            res.push((n.to_string(), high_pulse));
+        }
+        res
     }
 }
 
@@ -59,10 +87,13 @@ fn read_input() -> HashMap<String, Box<dyn CallableModule>> {
         let neighbors: Vec<String> = rhs.split(", ").map(String::from).collect();
 
         let (mod_name, mod_box) = if lhs.starts_with(PREFIX_FLIP_FLOP) {
-            let boxed: Box<dyn CallableModule> = Box::new(FlipFlopModule{neighbors: neighbors});
+            let boxed: Box<dyn CallableModule> = Box::new(FlipFlopModule{on: false, neighbors: neighbors});
             (&lhs[1..], boxed)
         } else if lhs.starts_with(PREFIX_CONJUNCTION) {
-            let boxed: Box<dyn CallableModule> = Box::new(ConjunctionModule{neighbors: neighbors});
+            let boxed: Box<dyn CallableModule> = Box::new(ConjunctionModule{
+                neighbors: neighbors,
+                neighbor_high_pulse: HashSet::new(),
+            });
             (&lhs[1..], boxed)
         } else {
             let boxed: Box<dyn CallableModule> = Box::new(BroadcastModule{neighbors: neighbors});
@@ -77,18 +108,17 @@ fn read_input() -> HashMap<String, Box<dyn CallableModule>> {
 
 fn main() {
     let mut mods = read_input();
-    let mut actions: VecDeque<(String, String)> = VecDeque::new();
-    actions.push_back((MODULE_BUTTON.to_string(), MODULE_BROADCAST.to_string()));
+    let mut actions: VecDeque<(String, String, bool)> = VecDeque::new();
+    actions.push_back((MODULE_BUTTON.to_string(), MODULE_BROADCAST.to_string(), false));
 
-    loop {
-        if let Some((sender, dest)) = actions.pop_front() {
-            println!("{} -> {}", sender, dest);
-
-            if let Some(c) = mods.get_mut(&dest) {
-                c.call();
+    while let Some((sender, dest, high_pulse)) = actions.pop_front() {
+        println!("{} -> {} [{}]", sender, dest, high_pulse);
+        if let Some(c) = mods.get_mut(&dest) {
+            for (n, p) in c.call(sender, high_pulse) {
+                actions.push_back((dest.clone(), n, p))
             }
         } else {
-            return;
+            panic!("couldn't find item {} among modules", dest)
         }
     }
 }
