@@ -34,11 +34,11 @@ struct BroadcastModule {
 }
 
 pub trait CallableModule {
-    fn call(&mut self, sender: String, high_pulse: bool) -> Vec<(String, bool)>;
+    fn call(&mut self, sender: &String, high_pulse: bool) -> Vec<(String, bool)>;
 }
 
 impl CallableModule for FlipFlopModule {
-    fn call(&mut self, sender: String, high_pulse: bool) -> Vec<(String, bool)> {
+    fn call(&mut self, _sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
         let mut res = Vec::new();
         if !high_pulse {
             self.on = !self.on;
@@ -51,28 +51,23 @@ impl CallableModule for FlipFlopModule {
 }
 
 impl CallableModule for ConjunctionModule {
-    fn call(&mut self, sender: String, high_pulse: bool) -> Vec<(String, bool)> {
+    fn call(&mut self, sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
         if high_pulse {
-            self.neighbor_high_pulse.insert(sender);
+            self.neighbor_high_pulse.insert(sender.to_owned());
         } else {
-            self.neighbor_high_pulse.remove(&sender);
+            self.neighbor_high_pulse.remove(sender);
         }
-        let pulse = !(self.neighbor_high_pulse.len() == self.neighbors.len());
-        let mut res = Vec::new();
-        for n in &self.neighbors {
-            res.push((n.to_string(), pulse));
-        }
-        println!("call::conjunction");
+        let pulse = self.neighbor_high_pulse.len() != self.neighbors.len();
+        let res: Vec<(String, bool)> = self.neighbors.iter().map(|n| (n.to_owned(), pulse)).collect();
         res
     }
 }
 
 impl CallableModule for BroadcastModule {
-    fn call(&mut self, sender: String, high_pulse: bool) -> Vec<(String, bool)> {
-        println!("call::broadcast");
+    fn call(&mut self, _sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
         let mut res = Vec::new();
         for n in &self.neighbors {
-            res.push((n.to_string(), high_pulse));
+            res.push((n.to_owned(), high_pulse));
         }
         res
     }
@@ -87,7 +82,10 @@ fn read_input() -> HashMap<String, Box<dyn CallableModule>> {
         let neighbors: Vec<String> = rhs.split(", ").map(String::from).collect();
 
         let (mod_name, mod_box) = if lhs.starts_with(PREFIX_FLIP_FLOP) {
-            let boxed: Box<dyn CallableModule> = Box::new(FlipFlopModule{on: false, neighbors: neighbors});
+            let boxed: Box<dyn CallableModule> = Box::new(FlipFlopModule{
+                on: false,
+                neighbors: neighbors,
+            });
             (&lhs[1..], boxed)
         } else if lhs.starts_with(PREFIX_CONJUNCTION) {
             let boxed: Box<dyn CallableModule> = Box::new(ConjunctionModule{
@@ -96,11 +94,13 @@ fn read_input() -> HashMap<String, Box<dyn CallableModule>> {
             });
             (&lhs[1..], boxed)
         } else {
-            let boxed: Box<dyn CallableModule> = Box::new(BroadcastModule{neighbors: neighbors});
+            let boxed: Box<dyn CallableModule> = Box::new(BroadcastModule{
+                neighbors: neighbors,
+            });
             (lhs, boxed)
         };
 
-        modules.insert(mod_name.to_string(), mod_box);
+        modules.insert(mod_name.to_owned(), mod_box);
     }
 
     modules
@@ -109,16 +109,14 @@ fn read_input() -> HashMap<String, Box<dyn CallableModule>> {
 fn main() {
     let mut mods = read_input();
     let mut actions: VecDeque<(String, String, bool)> = VecDeque::new();
-    actions.push_back((MODULE_BUTTON.to_string(), MODULE_BROADCAST.to_string(), false));
+    actions.push_back((MODULE_BUTTON.to_owned(), MODULE_BROADCAST.to_owned(), false));
 
     while let Some((sender, dest, high_pulse)) = actions.pop_front() {
-        println!("{} -> {} [{}]", sender, dest, high_pulse);
+        println!("{} -{}-> {}", sender, if high_pulse { "high" } else { "low"}, dest);
         if let Some(c) = mods.get_mut(&dest) {
-            for (n, p) in c.call(sender, high_pulse) {
-                actions.push_back((dest.clone(), n, p))
+            for (n, p) in c.call(&sender, high_pulse) {
+                actions.push_back((dest.to_owned(), n, p))
             }
-        } else {
-            panic!("couldn't find item {} among modules", dest)
         }
     }
 }
