@@ -1,16 +1,13 @@
 use std::io;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::collections::VecDeque;
 
 /*
-
 We'll have a hashmap that is all known modules {"name" => mod_instance}
 Each mod instance has a list of destination node strings.
 We'll have a linked list of actions. We put broadcast in this linked list and execute it.
 All resulting actions go to the end.
 We then pop off the front and do it again.
-
 */
 
 const PREFIX_FLIP_FLOP: char = '%';
@@ -19,30 +16,32 @@ const PREFIX_CONJUNCTION: char = '&';
 const MODULE_BUTTON: &str = "button";
 const MODULE_BROADCAST: &str = "broadcaster";
 
-struct FlipFlopModule {
+struct Module {
+    neighbors: Vec<String>,
+    behavior: Box<dyn ModuleBehavior>,
+}
+
+struct FlipFlopBehavior {
     on: bool,
-    neighbors: Vec<String>,
 }
 
-struct ConjunctionModule {
-    neighbors: Vec<String>,
-    neighbor_high_pulse: HashSet<String>,
+struct ConjunctionBehavior {
+    source_high_pulse: HashMap<String, bool>,
 }
 
-struct BroadcastModule {
-    neighbors: Vec<String>,
+struct BroadcastBehavior;
+
+trait ModuleBehavior {
+    fn call(&mut self, neighbors: &Vec<String>, sender: &String, high_pulse: bool) -> Vec<(String, bool)>;
+    fn add_source(&mut self, _source_module: &String) {}
 }
 
-pub trait CallableModule {
-    fn call(&mut self, sender: &String, high_pulse: bool) -> Vec<(String, bool)>;
-}
-
-impl CallableModule for FlipFlopModule {
-    fn call(&mut self, _sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
-        let mut res = Vec::new();
+impl ModuleBehavior for FlipFlopBehavior {
+    fn call(&mut self, neighbors: &Vec<String>, _sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
+        let mut res = Vec::with_capacity(neighbors.len());
         if !high_pulse {
             self.on = !self.on;
-            for n in &self.neighbors {
+            for n in neighbors {
                 res.push((n.to_string(), self.on));
             }
         }
@@ -50,57 +49,75 @@ impl CallableModule for FlipFlopModule {
     }
 }
 
-impl CallableModule for ConjunctionModule {
-    fn call(&mut self, sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
-        if high_pulse {
-            self.neighbor_high_pulse.insert(sender.to_owned());
-        } else {
-            self.neighbor_high_pulse.remove(sender);
+impl ModuleBehavior for ConjunctionBehavior {
+    fn call(&mut self, neighbors: &Vec<String>, sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
+        if let Some(v) = self.source_high_pulse.get_mut(sender) {
+            *v = high_pulse;
         }
-        let pulse = self.neighbor_high_pulse.len() != self.neighbors.len();
-        let res: Vec<(String, bool)> = self.neighbors.iter().map(|n| (n.to_owned(), pulse)).collect();
+        let pulse = self.source_high_pulse.values().any(|v| !(*v));
+        let res: Vec<(String, bool)> = neighbors.iter().map(|n| (n.to_owned(), pulse)).collect();
         res
+    }
+
+    fn add_source(&mut self, source_module: &String) {
+        self.source_high_pulse.insert(source_module.to_owned(), false);
     }
 }
 
-impl CallableModule for BroadcastModule {
-    fn call(&mut self, _sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
-        let mut res = Vec::new();
-        for n in &self.neighbors {
+impl ModuleBehavior for BroadcastBehavior {
+    fn call(&mut self, neighbors: &Vec<String>, _sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
+        let mut res = Vec::with_capacity(neighbors.len());
+        for n in neighbors {
             res.push((n.to_owned(), high_pulse));
         }
         res
     }
 }
 
-fn read_input() -> HashMap<String, Box<dyn CallableModule>> {
-    let mut modules: HashMap<String, Box<dyn CallableModule>> = HashMap::new();
+fn read_input() -> HashMap<String, Box<Module>> {
+    let mut modules = HashMap::new();
 
     for line in io::stdin().lines() {
         let line = line.unwrap();
         let (lhs, rhs) = line.split_once(" -> ").unwrap();
         let neighbors: Vec<String> = rhs.split(", ").map(String::from).collect();
 
-        let (mod_name, mod_box) = if lhs.starts_with(PREFIX_FLIP_FLOP) {
-            let boxed: Box<dyn CallableModule> = Box::new(FlipFlopModule{
+        let (mod_name, behavior) = if lhs.starts_with(PREFIX_FLIP_FLOP) {
+            let boxed: Box<dyn ModuleBehavior> = Box::new(FlipFlopBehavior{
                 on: false,
-                neighbors: neighbors,
             });
             (&lhs[1..], boxed)
         } else if lhs.starts_with(PREFIX_CONJUNCTION) {
-            let boxed: Box<dyn CallableModule> = Box::new(ConjunctionModule{
-                neighbors: neighbors,
-                neighbor_high_pulse: HashSet::new(),
+            let boxed: Box<dyn ModuleBehavior> = Box::new(ConjunctionBehavior{
+                source_high_pulse: HashMap::new(),
             });
             (&lhs[1..], boxed)
         } else {
-            let boxed: Box<dyn CallableModule> = Box::new(BroadcastModule{
-                neighbors: neighbors,
+            let boxed: Box<dyn ModuleBehavior> = Box::new(BroadcastBehavior{
             });
             (lhs, boxed)
         };
 
-        modules.insert(mod_name.to_owned(), mod_box);
+        modules.insert(mod_name.to_owned(), Box::new(Module{
+            neighbors,
+            behavior,
+        }));
+    }
+
+    // Go back through and install source modules now that the modules map is
+    // fully populated.
+
+    let mut connections: Vec<(String, String)> = Vec::new();
+    for (k, v) in modules.iter() {
+        for n in v.neighbors.iter() {
+            connections.push((k.to_owned(), n.to_owned()));
+        }
+    }
+
+    for (src, dest) in &connections {
+        if let Some(dest_module) = modules.get_mut(dest) {
+            dest_module.behavior.add_source(src);
+        }
     }
 
     modules
@@ -114,7 +131,7 @@ fn main() {
     while let Some((sender, dest, high_pulse)) = actions.pop_front() {
         println!("{} -{}-> {}", sender, if high_pulse { "high" } else { "low"}, dest);
         if let Some(c) = mods.get_mut(&dest) {
-            for (n, p) in c.call(&sender, high_pulse) {
+            for (n, p) in c.behavior.call(&c.neighbors, &sender, high_pulse) {
                 actions.push_back((dest.to_owned(), n, p))
             }
         }
