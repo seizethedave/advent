@@ -126,14 +126,27 @@ fn read_input() -> HashMap<String, Box<Module>> {
 fn main() {
     let mut mods = read_input();
     let mut actions: VecDeque<(String, String, bool)> = VecDeque::new();
-    actions.push_back((MODULE_BUTTON.to_owned(), MODULE_BROADCAST.to_owned(), false));
 
-    while let Some((sender, dest, high_pulse)) = actions.pop_front() {
-        println!("{} -{}-> {}", sender, if high_pulse { "high" } else { "low"}, dest);
-        if let Some(c) = mods.get_mut(&dest) {
-            for (n, p) in c.behavior.call(&c.neighbors, &sender, high_pulse) {
-                actions.push_back((dest.to_owned(), n, p))
+    const PRESSES: i16 = 1000;
+    let mut low_pulses: i64 = 0;
+    let mut high_pulses: i64 = 0;
+
+    for _i in 0..PRESSES {
+        actions.push_back((MODULE_BUTTON.to_owned(), MODULE_BROADCAST.to_owned(), false));
+
+        while let Some((sender, dest, high_pulse)) = actions.pop_front() {
+            if high_pulse {
+                high_pulses += 1;
+            } else {
+                low_pulses += 1;
+            }
+            if let Some(c) = mods.get_mut(&dest) {
+                for (n, p) in c.behavior.call(&c.neighbors, &sender, high_pulse) {
+                    actions.push_back((dest.to_owned(), n, p))
+                }
             }
         }
     }
+
+    println!("{}", low_pulses * high_pulses)
 }
