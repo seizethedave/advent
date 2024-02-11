@@ -38,22 +38,22 @@ trait ModuleBehavior {
 
 impl ModuleBehavior for FlipFlopBehavior {
     fn call(&mut self, neighbors: &Vec<String>, _sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
-        let mut res = Vec::with_capacity(neighbors.len());
         if !high_pulse {
             self.on = !self.on;
+            let mut res = Vec::with_capacity(neighbors.len());
             for n in neighbors {
                 res.push((n.to_string(), self.on));
             }
+            res
+        } else {
+            Vec::new()
         }
-        res
     }
 }
 
 impl ModuleBehavior for ConjunctionBehavior {
     fn call(&mut self, neighbors: &Vec<String>, sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
-        if let Some(v) = self.source_high_pulse.get_mut(sender) {
-            *v = high_pulse;
-        }
+        self.source_high_pulse.insert(sender.to_owned(), high_pulse);
         let pulse = self.source_high_pulse.values().any(|v| !(*v));
         let res: Vec<(String, bool)> = neighbors.iter().map(|n| (n.to_owned(), pulse)).collect();
         res
