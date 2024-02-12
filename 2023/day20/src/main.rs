@@ -32,40 +32,51 @@ struct ConjunctionBehavior {
 struct BroadcastBehavior;
 
 trait ModuleBehavior {
-    fn call(&mut self, neighbors: &Vec<String>, sender: &String, high_pulse: bool) -> Vec<(String, bool)>;
-    fn add_source(&mut self, _source_module: &String) {}
+    fn call(&mut self, neighbors: &Vec<String>, sender: &str, high_pulse: bool) -> Vec<(String, bool)>;
+    fn add_source(&mut self, _source_module: &str) {}
+    fn reset(&mut self) {}
 }
 
 impl ModuleBehavior for FlipFlopBehavior {
-    fn call(&mut self, neighbors: &Vec<String>, _sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
+    fn call(&mut self, neighbors: &Vec<String>, _sender: &str, high_pulse: bool) -> Vec<(String, bool)> {
         if !high_pulse {
             self.on = !self.on;
             let mut res = Vec::with_capacity(neighbors.len());
             for n in neighbors {
-                res.push((n.to_string(), self.on));
+                res.push((n.to_owned(), self.on));
             }
             res
         } else {
-            Vec::new()
+            vec![]
         }
+    }
+
+    fn reset(&mut self) {
+        self.on = false;
     }
 }
 
 impl ModuleBehavior for ConjunctionBehavior {
-    fn call(&mut self, neighbors: &Vec<String>, sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
+    fn call(&mut self, neighbors: &Vec<String>, sender: &str, high_pulse: bool) -> Vec<(String, bool)> {
         self.source_high_pulse.insert(sender.to_owned(), high_pulse);
-        let pulse = self.source_high_pulse.values().any(|v| !(*v));
+        let pulse = self.source_high_pulse.values().any(|v| !*v);
         let res: Vec<(String, bool)> = neighbors.iter().map(|n| (n.to_owned(), pulse)).collect();
         res
     }
 
-    fn add_source(&mut self, source_module: &String) {
+    fn add_source(&mut self, source_module: &str) {
         self.source_high_pulse.insert(source_module.to_owned(), false);
+    }
+
+    fn reset(&mut self) {
+        for v in self.source_high_pulse.values_mut() {
+            *v = false;
+        }
     }
 }
 
 impl ModuleBehavior for BroadcastBehavior {
-    fn call(&mut self, neighbors: &Vec<String>, _sender: &String, high_pulse: bool) -> Vec<(String, bool)> {
+    fn call(&mut self, neighbors: &Vec<String>, _sender: &str, high_pulse: bool) -> Vec<(String, bool)> {
         let mut res = Vec::with_capacity(neighbors.len());
         for n in neighbors {
             res.push((n.to_owned(), high_pulse));
@@ -93,8 +104,7 @@ fn read_input() -> HashMap<String, Box<Module>> {
             });
             (&lhs[1..], boxed)
         } else {
-            let boxed: Box<dyn ModuleBehavior> = Box::new(BroadcastBehavior{
-            });
+            let boxed: Box<dyn ModuleBehavior> = Box::new(BroadcastBehavior{});
             (lhs, boxed)
         };
 
@@ -148,5 +158,35 @@ fn main() {
         }
     }
 
-    println!("{}", low_pulses * high_pulses)
+    println!("{}", low_pulses * high_pulses);
+
+    // Now reset the module state and see how many button presses it takes to
+    // get a low pulse on module "rx".
+
+    for m in mods.values_mut() {
+        m.behavior.reset();
+    }
+
+    let mut ct: i64 = 0;
+
+    'outer: loop {
+        ct += 1;
+        if (ct % 1_000_000) == 0 {
+            println!("{}", ct);
+        }
+        actions.push_back((MODULE_BUTTON.to_owned(), MODULE_BROADCAST.to_owned(), false));
+
+        while let Some((sender, dest, high_pulse)) = actions.pop_front() {
+            if !high_pulse && dest == "rx" {
+                println!("{}", ct);
+                break 'outer;
+            }
+
+            if let Some(c) = mods.get_mut(&dest) {
+                for (n, p) in c.behavior.call(&c.neighbors, &sender, high_pulse) {
+                    actions.push_back((dest.to_owned(), n, p))
+                }
+            }
+        }
+    }
 }
