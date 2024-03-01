@@ -23,31 +23,28 @@ enum Behavior {
 }
 
 impl Behavior {
-    fn call(&mut self, neighbors: &Vec<String>, sender: &str, high_pulse: bool) -> Vec<(String, bool)> {
+    fn call<C>(&mut self, neighbors: &Vec<String>, sender: &str, high_pulse: bool, mut callback: C)
+        where C: FnMut(String, bool)
+    {
         match *self {
             Self::Broadcast => {
-                let mut res = Vec::with_capacity(neighbors.len());
                 for n in neighbors {
-                    res.push((n.to_owned(), high_pulse));
+                    callback(n.to_owned(), high_pulse)
                 }
-                res
             },
             Self::Conjunction(ref mut h) => {
                 h.insert(sender.to_owned(), high_pulse);
                 let pulse = h.values().any(|v| !*v);
-                let res: Vec<(String, bool)> = neighbors.iter().map(|n| (n.to_owned(), pulse)).collect();
-                res
+                for n in neighbors {
+                    callback(n.to_owned(), pulse)
+                }
             },
             Self::FlipFlop(ref mut on) => {
                 if !high_pulse {
                     *on = !*on;
-                    let mut res: Vec<(String, bool)> = Vec::with_capacity(neighbors.len());
                     for n in neighbors {
-                        res.push((n.to_owned(), *on));
+                        callback(n.to_owned(), *on);
                     }
-                    res
-                } else {
-                    vec![]
                 }
             },
         }
@@ -142,9 +139,9 @@ fn main() {
                 low_pulses += 1;
             }
             if let Some(c) = mods.get_mut(&dest) {
-                for (n, p) in c.behavior.call(&c.neighbors, &sender, high_pulse) {
+                c.behavior.call(&c.neighbors, &sender, high_pulse, |n, p| {
                     actions.push_back((dest.to_owned(), n, p))
-                }
+                })
             }
         }
     }
@@ -174,9 +171,9 @@ fn main() {
             }
 
             if let Some(c) = mods.get_mut(&dest) {
-                for (n, p) in c.behavior.call(&c.neighbors, &sender, high_pulse) {
+                c.behavior.call(&c.neighbors, &sender, high_pulse, |n, p| {
                     actions.push_back((dest.to_owned(), n, p))
-                }
+                })
             }
         }
     }
