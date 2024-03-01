@@ -1,6 +1,7 @@
 use std::io;
 use std::collections::HashMap;
 use std::collections::VecDeque;
+use std::rc::Rc;
 
 /*
 We'll have a hashmap that is all known modules {"name" => mod_instance}
@@ -18,43 +19,43 @@ const MODULE_BROADCAST: &str = "broadcaster";
 
 enum Behavior {
     Broadcast,
-    Conjunction(HashMap<String, bool>),
+    Conjunction(HashMap<Rc<str>, bool>),
     FlipFlop(bool),
 }
 
 impl Behavior {
-    fn call<C>(&mut self, neighbors: &Vec<String>, sender: &str, high_pulse: bool, mut callback: C)
-        where C: FnMut(String, bool)
+    fn call<C>(&mut self, neighbors: &Vec<Rc<str>>, sender: Rc<str>, high_pulse: bool, mut callback: C)
+        where C: FnMut(Rc<str>, bool)
     {
         match *self {
             Self::Broadcast => {
                 for n in neighbors {
-                    callback(n.to_owned(), high_pulse)
+                    callback(n.clone(), high_pulse)
                 }
             },
             Self::Conjunction(ref mut h) => {
-                h.insert(sender.to_owned(), high_pulse);
+                h.insert(sender, high_pulse);
                 let pulse = h.values().any(|v| !*v);
                 for n in neighbors {
-                    callback(n.to_owned(), pulse)
+                    callback(n.clone(), pulse)
                 }
             },
             Self::FlipFlop(ref mut on) => {
                 if !high_pulse {
                     *on = !*on;
                     for n in neighbors {
-                        callback(n.to_owned(), *on);
+                        callback(n.clone(), *on);
                     }
                 }
             },
         }
     }
 
-    fn add_source(&mut self, source_module: &str) {
+    fn add_source(&mut self, source_module: Rc<str>) {
         match *self {
             Self::Broadcast => { },
             Self::Conjunction(ref mut h) => {
-                h.insert(source_module.to_owned(), false);
+                h.insert(source_module, false);
             },
             Self::FlipFlop(_) => { },
         }
@@ -76,17 +77,17 @@ impl Behavior {
 }
 
 struct Module {
-    neighbors: Vec<String>,
+    neighbors: Vec<Rc<str>>,
     behavior: Behavior,
 }
 
-fn read_input() -> HashMap<String, Box<Module>> {
-    let mut modules = HashMap::new();
+fn read_input() -> HashMap<Rc<str>, Box<Module>> {
+    let mut modules: HashMap<Rc<str>, Box<Module>> = HashMap::new();
 
     for line in io::stdin().lines() {
         let line = line.unwrap();
         let (lhs, rhs) = line.split_once(" -> ").unwrap();
-        let neighbors: Vec<String> = rhs.split(", ").map(String::from).collect();
+        let neighbors: Vec<Rc<str>> = rhs.split(", ").map(|s| Rc::from(s)).collect();
 
         let (mod_name, behavior) = if lhs.starts_with(PREFIX_FLIP_FLOP) {
             (&lhs[1..], Behavior::FlipFlop(false))
@@ -96,7 +97,7 @@ fn read_input() -> HashMap<String, Box<Module>> {
             (lhs, Behavior::Broadcast)
         };
 
-        modules.insert(mod_name.to_owned(), Box::new(Module{
+        modules.insert(Rc::from(mod_name), Box::new(Module{
             neighbors,
             behavior,
         }));
@@ -105,16 +106,16 @@ fn read_input() -> HashMap<String, Box<Module>> {
     // Go back through and install source modules now that the modules map is
     // fully populated.
 
-    let mut connections: Vec<(String, String)> = Vec::new();
+    let mut connections: Vec<(Rc<str>, Rc<str>)> = Vec::new();
     for (k, v) in modules.iter() {
         for n in v.neighbors.iter() {
-            connections.push((k.to_owned(), n.to_owned()));
+            connections.push((k.clone(), n.clone()));
         }
     }
 
     for (src, dest) in &connections {
         if let Some(dest_module) = modules.get_mut(dest) {
-            dest_module.behavior.add_source(src);
+            dest_module.behavior.add_source(src.clone());
         }
     }
 
@@ -123,14 +124,18 @@ fn read_input() -> HashMap<String, Box<Module>> {
 
 fn main() {
     let mut mods = read_input();
-    let mut actions: VecDeque<(String, String, bool)> = VecDeque::new();
+    let mut actions: VecDeque<(Rc<str>, Rc<str>, bool)> = VecDeque::new();
+
+    let button_ref: Rc<str> = Rc::from(MODULE_BUTTON);
+    let broadcast_ref: Rc<str> = Rc::from(MODULE_BROADCAST);
+    let module_rx = "rx";
 
     const PRESSES: i16 = 1000;
     let mut low_pulses: i64 = 0;
     let mut high_pulses: i64 = 0;
 
     for _i in 0..PRESSES {
-        actions.push_back((MODULE_BUTTON.to_owned(), MODULE_BROADCAST.to_owned(), false));
+        actions.push_back((button_ref.clone(), broadcast_ref.clone(), false));
 
         while let Some((sender, dest, high_pulse)) = actions.pop_front() {
             if high_pulse {
@@ -139,8 +144,8 @@ fn main() {
                 low_pulses += 1;
             }
             if let Some(c) = mods.get_mut(&dest) {
-                c.behavior.call(&c.neighbors, &sender, high_pulse, |n, p| {
-                    actions.push_back((dest.to_owned(), n, p))
+                c.behavior.call(&c.neighbors, sender.clone(), high_pulse, |n, p| {
+                    actions.push_back((dest.clone(), n, p))
                 })
             }
         }
@@ -162,17 +167,17 @@ fn main() {
         if (ct % 1_000_000) == 0 {
             println!("{}", ct);
         }
-        actions.push_back((MODULE_BUTTON.to_owned(), MODULE_BROADCAST.to_owned(), false));
+        actions.push_back((button_ref.clone(), broadcast_ref.clone(), false));
 
         while let Some((sender, dest, high_pulse)) = actions.pop_front() {
-            if !high_pulse && dest == "rx" {
+            if !high_pulse && *dest == *module_rx {
                 println!("{}", ct);
                 break 'outer;
             }
 
             if let Some(c) = mods.get_mut(&dest) {
-                c.behavior.call(&c.neighbors, &sender, high_pulse, |n, p| {
-                    actions.push_back((dest.to_owned(), n, p))
+                c.behavior.call(&c.neighbors, sender.clone(), high_pulse, |n, p| {
+                    actions.push_back((dest.clone(), n, p))
                 })
             }
         }
