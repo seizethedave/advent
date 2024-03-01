@@ -16,74 +16,73 @@ const PREFIX_CONJUNCTION: char = '&';
 const MODULE_BUTTON: &str = "button";
 const MODULE_BROADCAST: &str = "broadcaster";
 
+enum Behavior {
+    Conjunction(HashMap<String, bool>),
+    Broadcast,
+    FlipFlop(bool),
+}
+
 struct Module {
     neighbors: Vec<String>,
-    behavior: Box<dyn ModuleBehavior>,
+    behavior: Behavior,
 }
 
-struct FlipFlopBehavior {
-    on: bool,
-}
-
-struct ConjunctionBehavior {
-    source_high_pulse: HashMap<String, bool>,
-}
-
-struct BroadcastBehavior;
-
-trait ModuleBehavior {
-    fn call(&mut self, neighbors: &Vec<String>, sender: &str, high_pulse: bool) -> Vec<(String, bool)>;
-    fn add_source(&mut self, _source_module: &str) {}
-    fn reset(&mut self) {}
-}
-
-impl ModuleBehavior for FlipFlopBehavior {
-    fn call(&mut self, neighbors: &Vec<String>, _sender: &str, high_pulse: bool) -> Vec<(String, bool)> {
-        if !high_pulse {
-            self.on = !self.on;
-            let mut res = Vec::with_capacity(neighbors.len());
-            for n in neighbors {
-                res.push((n.to_owned(), self.on));
-            }
-            res
-        } else {
-            vec![]
-        }
-    }
-
-    fn reset(&mut self) {
-        self.on = false;
-    }
-}
-
-impl ModuleBehavior for ConjunctionBehavior {
+impl Behavior {
     fn call(&mut self, neighbors: &Vec<String>, sender: &str, high_pulse: bool) -> Vec<(String, bool)> {
-        self.source_high_pulse.insert(sender.to_owned(), high_pulse);
-        let pulse = self.source_high_pulse.values().any(|v| !*v);
-        let res: Vec<(String, bool)> = neighbors.iter().map(|n| (n.to_owned(), pulse)).collect();
-        res
+        match *self {
+            Self::Broadcast => {
+                let mut res = Vec::with_capacity(neighbors.len());
+                for n in neighbors {
+                    res.push((n.to_owned(), high_pulse));
+                }
+                res
+            },
+            Self::Conjunction(ref mut h) => {
+                h.insert(sender.to_owned(), high_pulse);
+                let pulse = h.values().any(|v| !*v);
+                let res: Vec<(String, bool)> = neighbors.iter().map(|n| (n.to_owned(), pulse)).collect();
+                res
+            },
+            Self::FlipFlop(ref mut on) => {
+                if !high_pulse {
+                    *on = !*on;
+                    let mut res: Vec<(String, bool)> = Vec::with_capacity(neighbors.len());
+                    for n in neighbors {
+                        res.push((n.to_owned(), *on));
+                    }
+                    res
+                } else {
+                    vec![]
+                }
+            },
+        }
     }
 
     fn add_source(&mut self, source_module: &str) {
-        self.source_high_pulse.insert(source_module.to_owned(), false);
+        match *self {
+            Self::Broadcast => { },
+            Self::Conjunction(ref mut h) => {
+                h.insert(source_module.to_owned(), false);
+            },
+            Self::FlipFlop(_) => { },
+        }
     }
 
     fn reset(&mut self) {
-        for v in self.source_high_pulse.values_mut() {
-            *v = false;
+        match *self {
+            Self::Broadcast => { },
+            Self::Conjunction(ref mut h) => {
+                for v in h.values_mut() {
+                    *v = false;
+                }
+            },
+            Self::FlipFlop(ref mut on) => {
+                *on = false;
+            },
         }
     }
 }
 
-impl ModuleBehavior for BroadcastBehavior {
-    fn call(&mut self, neighbors: &Vec<String>, _sender: &str, high_pulse: bool) -> Vec<(String, bool)> {
-        let mut res = Vec::with_capacity(neighbors.len());
-        for n in neighbors {
-            res.push((n.to_owned(), high_pulse));
-        }
-        res
-    }
-}
 
 fn read_input() -> HashMap<String, Box<Module>> {
     let mut modules = HashMap::new();
@@ -94,18 +93,11 @@ fn read_input() -> HashMap<String, Box<Module>> {
         let neighbors: Vec<String> = rhs.split(", ").map(String::from).collect();
 
         let (mod_name, behavior) = if lhs.starts_with(PREFIX_FLIP_FLOP) {
-            let boxed: Box<dyn ModuleBehavior> = Box::new(FlipFlopBehavior{
-                on: false,
-            });
-            (&lhs[1..], boxed)
+            (&lhs[1..], Behavior::FlipFlop(false))
         } else if lhs.starts_with(PREFIX_CONJUNCTION) {
-            let boxed: Box<dyn ModuleBehavior> = Box::new(ConjunctionBehavior{
-                source_high_pulse: HashMap::new(),
-            });
-            (&lhs[1..], boxed)
+            (&lhs[1..], Behavior::Conjunction(HashMap::new()))
         } else {
-            let boxed: Box<dyn ModuleBehavior> = Box::new(BroadcastBehavior{});
-            (lhs, boxed)
+            (lhs, Behavior::Broadcast)
         };
 
         modules.insert(mod_name.to_owned(), Box::new(Module{
