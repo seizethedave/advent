@@ -17,14 +17,9 @@ const MODULE_BUTTON: &str = "button";
 const MODULE_BROADCAST: &str = "broadcaster";
 
 enum Behavior {
-    Conjunction(HashMap<String, bool>),
     Broadcast,
+    Conjunction(HashMap<String, bool>),
     FlipFlop(bool),
-}
-
-struct Module {
-    neighbors: Vec<String>,
-    behavior: Behavior,
 }
 
 impl Behavior {
@@ -83,6 +78,10 @@ impl Behavior {
     }
 }
 
+struct Module {
+    neighbors: Vec<String>,
+    behavior: Behavior,
+}
 
 fn read_input() -> HashMap<String, Box<Module>> {
     let mut modules = HashMap::new();
