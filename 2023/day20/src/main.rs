@@ -25,26 +25,26 @@ enum Behavior {
 
 impl Behavior {
     fn call<C>(&mut self, neighbors: &Vec<Rc<str>>, sender: Rc<str>, high_pulse: bool, mut callback: C)
-        where C: FnMut(Rc<str>, bool)
+        where C: FnMut(&Rc<str>, bool)
     {
         match *self {
             Self::Broadcast => {
                 for n in neighbors {
-                    callback(n.clone(), high_pulse)
+                    callback(n, high_pulse)
                 }
             },
             Self::Conjunction(ref mut h) => {
                 h.insert(sender, high_pulse);
                 let pulse = h.values().any(|v| !*v);
                 for n in neighbors {
-                    callback(n.clone(), pulse)
+                    callback(n, pulse)
                 }
             },
             Self::FlipFlop(ref mut on) => {
                 if !high_pulse {
                     *on = !*on;
                     for n in neighbors {
-                        callback(n.clone(), *on);
+                        callback(n, *on);
                     }
                 }
             },
@@ -128,7 +128,7 @@ fn main() {
 
     let button_ref: Rc<str> = Rc::from(MODULE_BUTTON);
     let broadcast_ref: Rc<str> = Rc::from(MODULE_BROADCAST);
-    let module_rx = "rx";
+    const END_MODULE: &str = "rx";
 
     const PRESSES: i16 = 1000;
     let mut low_pulses: i64 = 0;
@@ -144,8 +144,8 @@ fn main() {
                 low_pulses += 1;
             }
             if let Some(c) = mods.get_mut(&dest) {
-                c.behavior.call(&c.neighbors, sender.clone(), high_pulse, |n, p| {
-                    actions.push_back((dest.clone(), n, p))
+                c.behavior.call(&c.neighbors, sender, high_pulse, |n, p| {
+                    actions.push_back((dest.clone(), n.clone(), p))
                 })
             }
         }
@@ -170,14 +170,14 @@ fn main() {
         actions.push_back((button_ref.clone(), broadcast_ref.clone(), false));
 
         while let Some((sender, dest, high_pulse)) = actions.pop_front() {
-            if !high_pulse && *dest == *module_rx {
+            if !high_pulse && *dest == *END_MODULE {
                 println!("{}", ct);
                 break 'outer;
             }
 
             if let Some(c) = mods.get_mut(&dest) {
-                c.behavior.call(&c.neighbors, sender.clone(), high_pulse, |n, p| {
-                    actions.push_back((dest.clone(), n, p))
+                c.behavior.call(&c.neighbors, sender, high_pulse, |n, p| {
+                    actions.push_back((dest.clone(), n.clone(), p))
                 })
             }
         }
