@@ -16,6 +16,7 @@ const PREFIX_CONJUNCTION: char = '&';
 
 const MODULE_BUTTON: &str = "button";
 const MODULE_BROADCAST: &str = "broadcaster";
+const MODULE_END: &str = "rx";
 
 enum Behavior {
     Broadcast,
@@ -128,7 +129,6 @@ fn main() {
 
     let button_ref: Rc<str> = Rc::from(MODULE_BUTTON);
     let broadcast_ref: Rc<str> = Rc::from(MODULE_BROADCAST);
-    const END_MODULE: &str = "rx";
 
     const PRESSES: i16 = 1000;
     let mut low_pulses: i64 = 0;
@@ -170,7 +170,7 @@ fn main() {
         actions.push_back((button_ref.clone(), broadcast_ref.clone(), false));
 
         while let Some((sender, dest, high_pulse)) = actions.pop_front() {
-            if !high_pulse && *dest == *END_MODULE {
+            if !high_pulse && *dest == *MODULE_END {
                 println!("{}", ct);
                 break 'outer;
             }
