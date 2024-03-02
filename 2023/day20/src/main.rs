@@ -17,18 +17,22 @@ const MODULE_BUTTON: &str = "button";
 const MODULE_BROADCAST: &str = "broadcaster";
 const MODULE_END: &str = "rx";
 
-type ModuleRef = usize;
+type ModuleRef = u16;
 
 struct RefStore {
     entries: HashMap<String, ModuleRef>,
 }
 
 impl RefStore {
+    fn new() -> Self {
+        RefStore { entries: HashMap::new() }
+    }
+
     fn get(&mut self, val: &str) -> ModuleRef {
         match self.entries.get(val) {
             Some(r) => *r,
             None => {
-                let next = self.entries.len();
+                let next = self.entries.len() as u16;
                 self.entries.insert(String::from(val), next);
                 next
             }
@@ -141,10 +145,26 @@ fn read_input(ref_store: &mut RefStore) -> HashMap<ModuleRef, Box<Module>> {
     modules
 }
 
+type ModuleCommand = u64;
+
+fn make_command(from: ModuleRef, to: ModuleRef, high_pulse: bool) -> ModuleCommand {
+    (to as u64 | ((from as u64) << 16) | ((high_pulse as u64) << 32)) as ModuleCommand
+}
+
+fn from_command(c: ModuleCommand) -> (ModuleRef, ModuleRef, bool) {
+    let mut c = c;
+    const LOW_SIXTEEN: u64 = 0b1111111111111111;
+    let to = (c & LOW_SIXTEEN) as ModuleRef;
+    c >>= 16;
+    let from = (c & LOW_SIXTEEN) as ModuleRef;
+    c >>= 16;
+    (from, to, c != 0)
+}
+
 fn main() {
-    let mut ref_store = RefStore{entries: HashMap::new()};
+    let mut ref_store = RefStore::new();
     let mut mods = read_input(&mut ref_store);
-    let mut actions: VecDeque<(ModuleRef, ModuleRef, bool)> = VecDeque::new();
+    let mut actions: VecDeque<ModuleCommand> = VecDeque::new();
 
     let button_ref = ref_store.get(MODULE_BUTTON);
     let broadcast_ref = ref_store.get(MODULE_BROADCAST);
@@ -155,9 +175,10 @@ fn main() {
     let mut high_pulses: i64 = 0;
 
     for _i in 0..PRESSES {
-        actions.push_back((button_ref, broadcast_ref, false));
+        actions.push_back(make_command(button_ref, broadcast_ref, false));
 
-        while let Some((sender, dest, high_pulse)) = actions.pop_front() {
+        while let Some(cmd) = actions.pop_front() {
+            let (sender, dest, high_pulse) = from_command(cmd);
             if high_pulse {
                 high_pulses += 1;
             } else {
@@ -165,7 +186,7 @@ fn main() {
             }
             if let Some(c) = mods.get_mut(&dest) {
                 c.behavior.call(&c.neighbors, sender, high_pulse, |n, p| {
-                    actions.push_back((dest, n, p))
+                    actions.push_back(make_command(dest, n, p))
                 })
             }
         }
@@ -187,9 +208,10 @@ fn main() {
         if (ct % 1_000_000) == 0 {
             println!("{}", ct);
         }
-        actions.push_back((button_ref, broadcast_ref, false));
+        actions.push_back(make_command(button_ref, broadcast_ref, false));
 
-        while let Some((sender, dest, high_pulse)) = actions.pop_front() {
+        while let Some(cmd) = actions.pop_front() {
+            let (sender, dest, high_pulse) = from_command(cmd);
             if !high_pulse && dest == rx_ref {
                 println!("{}", ct);
                 break 'outer;
@@ -197,7 +219,7 @@ fn main() {
 
             if let Some(c) = mods.get_mut(&dest) {
                 c.behavior.call(&c.neighbors, sender, high_pulse, |n, p| {
-                    actions.push_back((dest, n, p))
+                    actions.push_back(make_command(dest, n, p))
                 })
             }
         }
