@@ -58,7 +58,7 @@ impl Behavior {
             },
             Self::Conjunction(ref mut h) => {
                 h.insert(sender, high_pulse);
-                let pulse = h.values().any(|v| !*v);
+                let pulse = !h.values().all(|v| *v);
                 for n in neighbors {
                     callback(*n, pulse)
                 }
@@ -145,21 +145,24 @@ fn read_input(ref_store: &mut RefStore) -> HashMap<ModuleRef, Box<Module>> {
     modules
 }
 
-type ModuleCommand = u64;
+struct ModuleCommand(u64);
 
-fn make_command(from: ModuleRef, to: ModuleRef, high_pulse: bool) -> ModuleCommand {
-    (to as u64 | ((from as u64) << 16) | ((high_pulse as u64) << 32)) as ModuleCommand
+impl ModuleCommand {
+    fn new(from: ModuleRef, to: ModuleRef, high_pulse: bool) -> Self {
+        ModuleCommand(to as u64 | ((from as u64) << 16) | ((high_pulse as u64) << 32))
+    }
+
+    fn to_parts(self) -> (ModuleRef, ModuleRef, bool) {
+        let mut c = self.0;
+        const LOW_SIXTEEN: u64 = 0b1111111111111111;
+        let to = (c & LOW_SIXTEEN) as ModuleRef;
+        c >>= 16;
+        let from = (c & LOW_SIXTEEN) as ModuleRef;
+        (from, to, (c >> 16) != 0)
+    }
 }
 
-fn from_command(c: ModuleCommand) -> (ModuleRef, ModuleRef, bool) {
-    let mut c = c;
-    const LOW_SIXTEEN: u64 = 0b1111111111111111;
-    let to = (c & LOW_SIXTEEN) as ModuleRef;
-    c >>= 16;
-    let from = (c & LOW_SIXTEEN) as ModuleRef;
-    c >>= 16;
-    (from, to, c != 0)
-}
+
 
 fn main() {
     let mut ref_store = RefStore::new();
@@ -175,10 +178,10 @@ fn main() {
     let mut high_pulses: i64 = 0;
 
     for _i in 0..PRESSES {
-        actions.push_back(make_command(button_ref, broadcast_ref, false));
+        actions.push_back(ModuleCommand::new(button_ref, broadcast_ref, false));
 
         while let Some(cmd) = actions.pop_front() {
-            let (sender, dest, high_pulse) = from_command(cmd);
+            let (sender, dest, high_pulse) = cmd.to_parts();
             if high_pulse {
                 high_pulses += 1;
             } else {
@@ -186,7 +189,7 @@ fn main() {
             }
             if let Some(c) = mods.get_mut(&dest) {
                 c.behavior.call(&c.neighbors, sender, high_pulse, |n, p| {
-                    actions.push_back(make_command(dest, n, p))
+                    actions.push_back(ModuleCommand::new(dest, n, p))
                 })
             }
         }
@@ -208,10 +211,10 @@ fn main() {
         if (ct % 1_000_000) == 0 {
             println!("{}", ct);
         }
-        actions.push_back(make_command(button_ref, broadcast_ref, false));
+        actions.push_back(ModuleCommand::new(button_ref, broadcast_ref, false));
 
         while let Some(cmd) = actions.pop_front() {
-            let (sender, dest, high_pulse) = from_command(cmd);
+            let (sender, dest, high_pulse) = cmd.to_parts();
             if !high_pulse && dest == rx_ref {
                 println!("{}", ct);
                 break 'outer;
@@ -219,7 +222,7 @@ fn main() {
 
             if let Some(c) = mods.get_mut(&dest) {
                 c.behavior.call(&c.neighbors, sender, high_pulse, |n, p| {
-                    actions.push_back(make_command(dest, n, p))
+                    actions.push_back(ModuleCommand::new(dest, n, p))
                 })
             }
         }
