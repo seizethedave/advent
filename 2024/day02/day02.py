@@ -25,7 +25,7 @@ def safe(levels, tolerance=0, sign=None, prev_val=None):
         first_empty_sign = False
 
     return (
-        sign_ok and (1 <= abs(v - prev_val) <= 3) and safe(levels[1:], tolerance, sign, v)
+        (sign_ok and (1 <= abs(v - prev_val) <= 3) and safe(levels[1:], tolerance, sign, v))
         or
         # skip v
         safe(levels[1:], tolerance - 1, None if first_empty_sign else sign, prev_val)
