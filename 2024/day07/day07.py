@@ -1,8 +1,6 @@
 import sys
 
-def is_valid(testval, operands, tally=0):
-    if not tally:
-        tally, *operands = operands
+def is_valid(testval, tally, operands):
     if not operands:
         return tally == testval
     if tally > testval:
@@ -10,14 +8,16 @@ def is_valid(testval, operands, tally=0):
         return False
     n, *operands = operands
     return (
-        is_valid(testval, operands, tally + n) or
-        is_valid(testval, operands, tally * n) or
-        # part 2:
-        is_valid(testval, operands, int(str(tally) + str(n)))
+        is_valid(testval, int(str(tally) + str(n)), operands) # (part 2)
+        or is_valid(testval, tally * n, operands)
+        or is_valid(testval, tally + n, operands)
     )
 
 def sum_valid(inputs):
-    return sum(testval for testval, operands in inputs if is_valid(testval, operands))
+    return sum(
+        testval for testval, operands in inputs
+        if is_valid(testval, operands[0], operands[1:])
+    )
 
 if __name__ == "__main__":
     inputs = []
@@ -28,5 +28,3 @@ if __name__ == "__main__":
         inputs.append((testval, operands))
 
     print(sum_valid(inputs))
-
-    
