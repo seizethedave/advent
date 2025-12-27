@@ -18,15 +18,11 @@ def invalids(lo, hi):
     else:
         candidate = int(slo[:len(slo)//2])
 
-    while True:
-        inv = int(str(candidate) * 2)
+    while (inv := int(str(candidate) * 2)) <= hi:
+        if inv >= lo:
+            yield inv
         candidate += 1
-        if inv < lo:
-            continue
-        elif inv > hi:
-            break
-        yield inv
-
+        inv = int(str(candidate) * 2)
 
 if __name__ == "__main__":
     t = 0
