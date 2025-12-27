@@ -1,5 +1,4 @@
 import sys
-import math
 
 def read_ranges():
     l = sys.stdin.readline()
@@ -22,7 +21,6 @@ def invalids(lo, hi):
         if inv >= lo:
             yield inv
         candidate += 1
-        inv = int(str(candidate) * 2)
 
 if __name__ == "__main__":
     t = 0
