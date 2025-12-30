@@ -46,7 +46,6 @@ if __name__ == "__main__":
     print(ct)
 
     # Part 2:
-    changed = False
     removed = 0
 
     while True:
