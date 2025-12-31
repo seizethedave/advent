@@ -20,18 +20,13 @@ def load_input():
 
     return ranges, nums
 
-def in_ranges(ranges, num):
-    for (lo, hi) in ranges:
-        if lo <= num <= hi:
-            return True
-    else:
-        return False
-
 if __name__ == "__main__":
     ranges, nums = load_input()
 
     print(
         sum(
-            1 for n in nums if in_ranges(ranges, n)
+            1 for n in nums if any(
+                lo <= n <= hi for (lo, hi) in ranges
+            )
         )
     )
